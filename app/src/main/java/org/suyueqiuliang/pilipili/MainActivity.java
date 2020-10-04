@@ -4,10 +4,15 @@ import android.annotation.SuppressLint;
 import android.content.res.ColorStateList;
 import android.content.res.Resources;
 import android.os.Bundle;
+import android.view.Window;
+import android.view.WindowManager;
+import android.widget.Toolbar;
 
+import com.google.android.material.appbar.AppBarLayout;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.android.material.navigation.NavigationView;
 
+import androidx.appcompat.app.ActionBar;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.navigation.NavController;
 import androidx.navigation.Navigation;
@@ -43,8 +48,9 @@ public class MainActivity extends AppCompatActivity {
         navView.setItemTextColor(csl);
         navView.setItemIconTintList(csl);
 
-
-
+        getWindow().addFlags(WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS);
+        getWindow().clearFlags(WindowManager.LayoutParams.FLAG_TRANSLUCENT_STATUS);
+        getWindow().setStatusBarColor(getResources().getColor(R.color.colorAccent));
     }
     private StringBuffer getAPIReturn(String urlStr){
         StringBuffer document = new StringBuffer();
