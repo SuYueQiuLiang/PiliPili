@@ -4,8 +4,11 @@ import android.annotation.SuppressLint;
 import android.content.res.ColorStateList;
 import android.content.res.Resources;
 import android.os.Bundle;
+import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
+import android.widget.Button;
+import android.widget.ImageView;
 import android.widget.Toolbar;
 
 import com.google.android.material.appbar.AppBarLayout;
@@ -34,12 +37,15 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+        //控件变量
+
         NavigationView navView = findViewById(R.id.nav_view);
-        // Passing each menu ID as a set of Ids because each
-        // menu should be considered as top level destinations.
-        //AppBarConfiguration appBarConfiguration = new AppBarConfiguration.Builder(
-        //        R.id.navigation_home, R.id.navigation_dashboard, R.id.navigation_notifications)
-        //        .build();
+        View navHead = navView.getHeaderView(0);
+        ImageView userHead = navHead.findViewById(R.id.user_head);
+
+        //侧边栏和状态栏初始化
+
         NavController navController = Navigation.findNavController(this, R.id.nav_host_fragment);
         //NavigationUI.setupActionBarWithNavController(this, navController, appBarConfiguration);
         NavigationUI.setupWithNavController(navView, navController);
@@ -47,10 +53,18 @@ public class MainActivity extends AppCompatActivity {
         @SuppressLint("ResourceType") ColorStateList csl= getColorStateList(R.animator.navigation_menu_item_color);
         navView.setItemTextColor(csl);
         navView.setItemIconTintList(csl);
-
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS);
         getWindow().clearFlags(WindowManager.LayoutParams.FLAG_TRANSLUCENT_STATUS);
         getWindow().setStatusBarColor(getResources().getColor(R.color.colorAccent));
+
+        //监听事件
+        userHead.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                System.out.println("aa");
+            }
+        });
+
     }
     private StringBuffer getAPIReturn(String urlStr){
         StringBuffer document = new StringBuffer();
