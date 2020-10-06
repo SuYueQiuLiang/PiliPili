@@ -3,23 +3,23 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/mobile_navigation"
-    app:startDestination="@+id/navigation_home">
+    app:startDestination="@+id/navigation_home_channel">
 
     <fragment
-        android:id="@+id/navigation_home"
+        android:id="@+id/navigation_home_channel"
         android:name="org.suyueqiuliang.pilipili.ui.home.HomeFragment"
-        android:label="@string/title_home"
+        android:label="@string/title_home_channel"
         tools:layout="@layout/fragment_home" />
 
     <fragment
-        android:id="@+id/navigation_dashboard"
-        android:name="org.suyueqiuliang.pilipili.ui.dashboard.DashboardFragment"
-        android:label="@string/title_dashboard"
-        tools:layout="@layout/fragment_dashboard" />
+        android:id="@+id/navigation_rank"
+        android:name="org.suyueqiuliang.pilipili.ui.rank.RankFragment"
+        android:label="@string/title_rank"
+        tools:layout="@layout/fragment_rank" />
 
     <fragment
-        android:id="@+id/navigation_notifications"
-        android:name="org.suyueqiuliang.pilipili.ui.notifications.NotificationsFragment"
-        android:label="@string/title_notifications"
-        tools:layout="@layout/fragment_notifications" />
+        android:id="@+id/navigation_comic"
+        android:name="org.suyueqiuliang.pilipili.ui.comic.ComicFragment"
+        android:label="@string/title_comic"
+        tools:layout="@layout/fragment_comic" />
 </navigation>

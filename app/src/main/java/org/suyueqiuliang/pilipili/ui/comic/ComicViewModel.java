@@ -1,14 +1,14 @@
-package org.suyueqiuliang.pilipili.ui.notifications;
+package org.suyueqiuliang.pilipili.ui.comic;
 
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
 import androidx.lifecycle.ViewModel;
 
-public class NotificationsViewModel extends ViewModel {
+public class ComicViewModel extends ViewModel {
 
     private MutableLiveData<String> mText;
 
-    public NotificationsViewModel() {
+    public ComicViewModel() {
         mText = new MutableLiveData<>();
         mText.setValue("This is notifications fragment");
     }

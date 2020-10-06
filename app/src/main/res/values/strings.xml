@@ -1,6 +1,13 @@
 <resources>
     <string name="app_name">PiliPili</string>
-    <string name="title_home">Home</string>
-    <string name="title_dashboard">Dashboard</string>
-    <string name="title_notifications">Notifications</string>
+    <string name="title_home_channel">首页&amp;频道</string>
+    <string name="title_rank">排行榜</string>
+    <string name="title_comic">番剧推荐</string>
+    <string name="title_trends">动态</string>
+    <string name="title_history">历史</string>
+    <string name="title_collection">收藏</string>
+    <string name="title_later">稍后再看</string>
+    <string name="title_setting">设置</string>
+    <string name="title_about">关于</string>
+
 </resources>

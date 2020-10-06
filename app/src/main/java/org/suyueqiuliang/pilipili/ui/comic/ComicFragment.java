@@ -1,4 +1,4 @@
-package org.suyueqiuliang.pilipili.ui.notifications;
+package org.suyueqiuliang.pilipili.ui.comic;
 
 import android.os.Bundle;
 import android.view.LayoutInflater;
@@ -14,17 +14,17 @@ import androidx.lifecycle.ViewModelProviders;
 
 import org.suyueqiuliang.pilipili.R;
 
-public class NotificationsFragment extends Fragment {
+public class ComicFragment extends Fragment {
 
-    private NotificationsViewModel notificationsViewModel;
+    private ComicViewModel comicViewModel;
 
     public View onCreateView(@NonNull LayoutInflater inflater,
                              ViewGroup container, Bundle savedInstanceState) {
-        notificationsViewModel =
-                ViewModelProviders.of(this).get(NotificationsViewModel.class);
-        View root = inflater.inflate(R.layout.fragment_notifications, container, false);
+        comicViewModel =
+                ViewModelProviders.of(this).get(ComicViewModel.class);
+        View root = inflater.inflate(R.layout.fragment_comic, container, false);
         final TextView textView = root.findViewById(R.id.text_notifications);
-        notificationsViewModel.getText().observe(getViewLifecycleOwner(), new Observer<String>() {
+        comicViewModel.getText().observe(getViewLifecycleOwner(), new Observer<String>() {
             @Override
             public void onChanged(@Nullable String s) {
                 textView.setText(s);
