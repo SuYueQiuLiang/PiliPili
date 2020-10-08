@@ -22,8 +22,8 @@
         android:id="@+id/dialog_logo"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintRight_toRightOf="parent"
         android:layout_marginTop="20dp"
-        android:layout_marginLeft="20dp"
         android:layout_width="40dp"
         android:layout_height="40dp"
         android:src="@drawable/bilibili_logo"/>
@@ -32,8 +32,8 @@
         android:id="@+id/logging_textview"
         app:layout_constraintTop_toBottomOf="@id/dialog_logo"
         app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintRight_toRightOf="parent"
         android:layout_marginTop="10dp"
-        android:layout_marginLeft="20dp"
         android:layout_width="wrap_content"
         android:layout_height="40dp"
         android:text="登陆"
@@ -50,7 +50,8 @@
         android:layout_marginRight="20dp"
         android:layout_width="match_parent"
         android:hint="用户名/手机号"
-        android:layout_height="wrap_content"/>
+        android:layout_height="wrap_content"
+        android:visibility="gone"/>
 
     <EditText
         android:id="@+id/input_user_password"
@@ -61,7 +62,8 @@
         android:layout_marginRight="20dp"
         android:layout_width="match_parent"
         android:hint="密码"
-        android:layout_height="wrap_content"/>
+        android:layout_height="wrap_content"
+        android:visibility="gone"/>
 
     <Button
         android:id="@+id/logging_button"
@@ -73,13 +75,23 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="登陆"
-        android:background="@drawable/selector_register"/>
+        android:background="@drawable/selector_register"
+        android:visibility="gone"/>
 
     <View
         app:layout_constraintTop_toBottomOf="@id/logging_button"
         app:layout_constraintLeft_toLeftOf="parent"
         android:layout_width="match_parent"
-        android:layout_height="20dp"/>
+        android:layout_height="20dp"
+        android:visibility="gone"/>
+
+    <ImageView
+        app:layout_constraintTop_toBottomOf="@id/logging_textview"
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintRight_toRightOf="parent"
+        android:id="@+id/qr_code"
+        android:layout_width="300dp"
+        android:layout_height="300dp"/>
 
 
 </androidx.constraintlayout.widget.ConstraintLayout>
