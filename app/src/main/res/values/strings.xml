@@ -9,5 +9,6 @@
     <string name="title_later">稍后再看</string>
     <string name="title_setting">设置</string>
     <string name="title_about">关于</string>
+    <string name="not_login_message">未登陆</string>
 
 </resources>
