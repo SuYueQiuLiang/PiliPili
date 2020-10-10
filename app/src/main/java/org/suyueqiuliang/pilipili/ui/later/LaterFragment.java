@@ -1,4 +1,4 @@
-package org.suyueqiuliang.pilipili.ui.comic;
+package org.suyueqiuliang.pilipili.ui.later;
 
 import android.os.Bundle;
 import android.view.LayoutInflater;
@@ -15,17 +15,17 @@ import androidx.lifecycle.ViewModelProviders;
 
 import org.suyueqiuliang.pilipili.R;
 
-public class ComicFragment extends Fragment {
+public class LaterFragment extends Fragment {
 
-    private ComicViewModel comicViewModel;
+    private LaterViewModel laterViewModel;
 
     public View onCreateView(@NonNull LayoutInflater inflater,
                              ViewGroup container, Bundle savedInstanceState) {
-        comicViewModel =
-                new ViewModelProvider(this).get(ComicViewModel.class);
-        View root = inflater.inflate(R.layout.fragment_comic, container, false);
-        final TextView textView = root.findViewById(R.id.text_comic);
-        comicViewModel.getText().observe(getViewLifecycleOwner(), new Observer<String>() {
+        laterViewModel =
+                new ViewModelProvider(this).get(LaterViewModel.class);
+        View root = inflater.inflate(R.layout.fragment_later, container, false);
+        final TextView textView = root.findViewById(R.id.text_later);
+        laterViewModel.getText().observe(getViewLifecycleOwner(), new Observer<String>() {
             @Override
             public void onChanged(@Nullable String s) {
                 textView.setText(s);

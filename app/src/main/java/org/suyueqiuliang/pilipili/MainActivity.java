@@ -10,6 +10,7 @@ import android.content.res.Resources;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Color;
+import android.media.Image;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -115,6 +116,7 @@ public class MainActivity extends AppCompatActivity {
 
         //尝试从本地读取数据登陆
         userData = readUserInfo();
+
         if(userData!=null){
             new Thread(new Runnable() {
                 @Override
@@ -132,6 +134,7 @@ public class MainActivity extends AppCompatActivity {
                             }
                         });
                     }
+                    else logout(userHead,userName);
                 }
             }).start();
         }
@@ -152,7 +155,7 @@ public class MainActivity extends AppCompatActivity {
                     final EditText inputUserName = dialogView.findViewById(R.id.input_user_name);
                     final EditText inputUserPassword = dialogView.findViewById(R.id.input_user_password);
                     final ImageView qr_core = dialogView.findViewById(R.id.qr_code);
-
+                    final AlertDialog dialog = customizeDialog.show();
                     new Thread(new Runnable() {
                         @Override
                         public void run() {
@@ -172,6 +175,7 @@ public class MainActivity extends AppCompatActivity {
                                 System.out.println(oauthKey);
                                 keepLoginListen = true;
                                 JSONObject LoginInfoJsonObject;
+
                                 while (keepLoginListen && !wasLogin) {
                                     String LoginInfoReturn = onLoginListener(oauthKey);
                                     LoginInfoJsonObject = new JSONObject(LoginInfoReturn);
@@ -181,6 +185,17 @@ public class MainActivity extends AppCompatActivity {
                                         JSONObject userInfoJsonObject = LoginInfoJsonObject.getJSONObject("data");
                                         String userInfoUrl = userInfoJsonObject.getString("url");
                                         saveUserInfo(userInfoUrl);
+                                        userData = readUserInfo();
+                                        userInformation = getUserSelfInformation(userData.SESSDATA);
+                                        final Bitmap faceBitmap = getUserFaceBitmap();
+                                        runOnUiThread(new Runnable() {
+                                            @Override
+                                            public void run() {
+                                                userHead.setImageBitmap(faceBitmap);
+                                                userName.setText(userInformation.uname);
+                                            }
+                                        });
+                                        dialog.dismiss();
                                     }
                                     Thread.sleep(1000);
                                 }
@@ -217,8 +232,10 @@ public class MainActivity extends AppCompatActivity {
                             keepLoginListen = false;
                         }
                     });
-                    customizeDialog.show();
 
+                }
+                else {
+                    //打开dialog显示个人信息
                 }
             }
         });
@@ -255,10 +272,10 @@ public class MainActivity extends AppCompatActivity {
                     .openConnection();
             connection.setDoOutput(true);
             connection.setDoInput(true);
-            connection.setRequestMethod("POST"); //发送请求的方式
+            connection.setRequestMethod("POST");
             connection.setUseCaches(false); //不使用缓存
             connection.setRequestProperty("Content-Type",
-                    "application/x-www-form-urlencoded"); //设置服务器解析数据的方式
+                    "application/x-www-form-urlencoded");
             connection.connect();
             BufferedWriter out = new BufferedWriter(new OutputStreamWriter(connection.getOutputStream(), StandardCharsets.UTF_8));
             out.write("oauthKey=" + oauthKey);
@@ -389,36 +406,16 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    private boolean logout(String SESSDATA){
-        StringBuilder document = new StringBuilder();
-        try {
-            URL url = new URL("https://passport.bilibili.com/login?act=exit");
-            HttpURLConnection connection = (HttpURLConnection) url
-                    .openConnection();
-            connection.setDoInput(true);
-            connection.setRequestMethod("GET");
-            connection.setUseCaches(false);
-            connection.setRequestProperty("Cookie", "SESSDATA=" + SESSDATA);
-            connection.connect();
-            BufferedReader in = new BufferedReader(new InputStreamReader(connection.getInputStream(), StandardCharsets.UTF_8));
-            String line;
-            while ((line = in.readLine()) != null) {
-                document.append(line);
-            }
-            in.close();
-
-            //删除本地保存信息
-            File file = new File(localFilePath + "userInfo.inf");
-            file.delete()
-
-
-            //重置登陆状态变量
-            wasLogin = false;
-            return true;
-        } catch (IOException e) {
-            e.printStackTrace();
-            return false;
-        }
+    @SuppressLint("UseCompatLoadingForDrawables")
+    private boolean logout(ImageView faceImageView, TextView userNameView){
+        File file = new File(localFilePath + "userInfo.inf");
+        final boolean delete = file.delete();
+        wasLogin = false;
+        userData = null;
+        userInformation = null;
+        faceImageView.setImageDrawable(getDrawable(R.drawable.test_head));
+        userNameView.setText(getResources().getText(R.string.login_message));
+        return true;
     }
 
     private UserInformation getUserSelfInformation(String SESSDATA){
@@ -481,6 +478,7 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    //private boolean full
 
 
 

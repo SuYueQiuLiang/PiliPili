@@ -1,16 +1,16 @@
-package org.suyueqiuliang.pilipili.ui.comic;
+package org.suyueqiuliang.pilipili.ui.collection;
 
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
 import androidx.lifecycle.ViewModel;
 
-public class ComicViewModel extends ViewModel {
+public class CollectionViewModel extends ViewModel {
 
     private MutableLiveData<String> mText;
 
-    public ComicViewModel() {
+    public CollectionViewModel() {
         mText = new MutableLiveData<>();
-        mText.setValue("This is comic fragment");
+        mText.setValue("This is collection fragment");
     }
 
     public LiveData<String> getText() {

@@ -22,4 +22,35 @@
         android:name="org.suyueqiuliang.pilipili.ui.comic.ComicFragment"
         android:label="@string/title_comic"
         tools:layout="@layout/fragment_comic" />
+
+    <fragment
+        android:id="@+id/navigation_trends"
+        android:name="org.suyueqiuliang.pilipili.ui.trends.TrendsFragment"
+        android:label="@string/title_trends"
+        tools:layout="@layout/fragment_trends" />
+
+    <fragment
+        android:id="@+id/navigation_history"
+        android:name="org.suyueqiuliang.pilipili.ui.history.HistoryFragment"
+        android:label="@string/title_history"
+        tools:layout="@layout/fragment_history" />
+
+    <fragment
+        android:id="@+id/navigation_collection"
+        android:name="org.suyueqiuliang.pilipili.ui.collection.CollectionFragment"
+        android:label="@string/title_collection"
+        tools:layout="@layout/fragment_collection" />
+
+    <fragment
+        android:id="@+id/navigation_later"
+        android:name="org.suyueqiuliang.pilipili.ui.later.LaterFragment"
+        android:label="@string/title_later"
+        tools:layout="@layout/fragment_later" />
+
+    <fragment
+        android:id="@+id/navigation_message"
+        android:name="org.suyueqiuliang.pilipili.ui.message.MessageFragment"
+        android:label="@string/title_message"
+        tools:layout="@layout/fragment_message" />
+
 </navigation>

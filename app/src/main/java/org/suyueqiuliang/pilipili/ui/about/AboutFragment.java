@@ -1,4 +1,4 @@
-package org.suyueqiuliang.pilipili.ui.comic;
+package org.suyueqiuliang.pilipili.ui.about;
 
 import android.os.Bundle;
 import android.view.LayoutInflater;
@@ -11,21 +11,20 @@ import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.Observer;
 import androidx.lifecycle.ViewModelProvider;
-import androidx.lifecycle.ViewModelProviders;
 
 import org.suyueqiuliang.pilipili.R;
 
-public class ComicFragment extends Fragment {
+public class AboutFragment extends Fragment {
 
-    private ComicViewModel comicViewModel;
+    private AboutViewModel aboutViewModel;
 
     public View onCreateView(@NonNull LayoutInflater inflater,
                              ViewGroup container, Bundle savedInstanceState) {
-        comicViewModel =
-                new ViewModelProvider(this).get(ComicViewModel.class);
-        View root = inflater.inflate(R.layout.fragment_comic, container, false);
-        final TextView textView = root.findViewById(R.id.text_comic);
-        comicViewModel.getText().observe(getViewLifecycleOwner(), new Observer<String>() {
+        aboutViewModel =
+                new ViewModelProvider(this).get(AboutViewModel.class);
+        View root = inflater.inflate(R.layout.fragment_about, container, false);
+        final TextView textView = root.findViewById(R.id.text_about);
+        aboutViewModel.getText().observe(getViewLifecycleOwner(), new Observer<String>() {
             @Override
             public void onChanged(@Nullable String s) {
                 textView.setText(s);

@@ -1,4 +1,4 @@
-package org.suyueqiuliang.pilipili.ui.comic;
+package org.suyueqiuliang.pilipili.ui.trends;
 
 import android.os.Bundle;
 import android.view.LayoutInflater;
@@ -15,17 +15,17 @@ import androidx.lifecycle.ViewModelProviders;
 
 import org.suyueqiuliang.pilipili.R;
 
-public class ComicFragment extends Fragment {
+public class TrendsFragment extends Fragment {
 
-    private ComicViewModel comicViewModel;
+    private TrendsViewModel trendsViewModel;
 
     public View onCreateView(@NonNull LayoutInflater inflater,
                              ViewGroup container, Bundle savedInstanceState) {
-        comicViewModel =
-                new ViewModelProvider(this).get(ComicViewModel.class);
-        View root = inflater.inflate(R.layout.fragment_comic, container, false);
-        final TextView textView = root.findViewById(R.id.text_comic);
-        comicViewModel.getText().observe(getViewLifecycleOwner(), new Observer<String>() {
+        trendsViewModel =
+                new ViewModelProvider(this).get(TrendsViewModel.class);
+        View root = inflater.inflate(R.layout.fragment_trends, container, false);
+        final TextView textView = root.findViewById(R.id.text_trends);
+        trendsViewModel.getText().observe(getViewLifecycleOwner(), new Observer<String>() {
             @Override
             public void onChanged(@Nullable String s) {
                 textView.setText(s);
