@@ -4,13 +4,13 @@
         <shape>
 
             <!-- 填充的颜色,这里是按钮的背景色 -->
-            <solid android:color="#FB7299" />
+            <solid android:color="#e6e6e6" />
 
             <!-- 设置按钮的四个角为弧形 -->
             <!-- android:radius 弧形的半径 -->
-            <corners android:radius="10dip" />
+            <corners android:radius="18dp" />
             <!-- 这里是没有被点击边框的颜色 -->
-            <stroke android:width="2px" android:color="#FB7299" />
+            <stroke android:width="2px" android:color="#e6e6e6" />
         </shape>
     </item>
 
@@ -18,13 +18,13 @@
         <shape>
 
             <!-- 填充的颜色 -->
-            <solid android:color="#BC627B" />
+            <solid android:color="#e6e6e6" />
 
             <!-- 设置按钮的四个角为弧形 -->
             <!-- android:radius 弧形的半径 -->
-            <corners android:radius="10dip" />
+            <corners android:radius="18dp" />
             <!-- 这里是被点击后边框的颜色 -->
-            <stroke android:width="2px" android:color="#BC627B" />
+            <stroke android:width="2px" android:color="#e6e6e6" />
         </shape>
     </item>
 

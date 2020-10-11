@@ -3,6 +3,7 @@ package org.suyueqiuliang.pilipili;
 import android.Manifest;
 import android.annotation.SuppressLint;
 import android.app.AlertDialog;
+import android.content.Context;
 import android.content.DialogInterface;
 import android.content.pm.PackageManager;
 import android.content.res.ColorStateList;
@@ -12,12 +13,16 @@ import android.graphics.BitmapFactory;
 import android.graphics.Color;
 import android.media.Image;
 import android.os.Bundle;
+import android.os.IBinder;
 import android.view.LayoutInflater;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.WindowManager;
+import android.view.inputmethod.InputMethodManager;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 
@@ -81,7 +86,7 @@ class UserInformation{
     int money,moral,vipStatus,wallet;
 }
 public class MainActivity extends AppCompatActivity {
-
+    EditText searchBar;
     boolean wasLogin=false,keepLoginListen=false;
     String localFilePath;
     UserData userData;
@@ -102,6 +107,8 @@ public class MainActivity extends AppCompatActivity {
         final View navHead = navView.getHeaderView(0);
         final ImageView userHead = navHead.findViewById(R.id.user_head);
         final TextView userName = navHead.findViewById(R.id.user_name);
+        searchBar = findViewById(R.id.search_bar);
+
         //侧边栏和状态栏初始化
 
         NavController navController = Navigation.findNavController(this, R.id.nav_host_fragment);
@@ -110,9 +117,12 @@ public class MainActivity extends AppCompatActivity {
         @SuppressLint("ResourceType") ColorStateList csl= getColorStateList(R.animator.navigation_menu_item_color);
         navView.setItemTextColor(csl);
         navView.setItemIconTintList(csl);
+
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS);
         //getWindow().clearFlags(WindowManager.LayoutParams.FLAG_TRANSLUCENT_STATUS);
         getWindow().setStatusBarColor(getColor(R.color.colorAccent));
+
+
 
         //尝试从本地读取数据登陆
         userData = readUserInfo();
@@ -121,9 +131,9 @@ public class MainActivity extends AppCompatActivity {
             new Thread(new Runnable() {
                 @Override
                 public void run() {
-                    wasLogin = testLogin(userData.SESSDATA);
+                    wasLogin = testLogin();
                     if(wasLogin){
-                        userInformation = getUserSelfInformation(userData.SESSDATA);
+                        userInformation = getUserSelfInformation();
 
                         final Bitmap bitmap = getUserFaceBitmap();
                         runOnUiThread(new Runnable() {
@@ -140,9 +150,11 @@ public class MainActivity extends AppCompatActivity {
         }
 
         //监听事件
+
         userHead.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                searchBar.clearFocus();
                 if (!wasLogin) {
                     AlertDialog.Builder customizeDialog =
                             new AlertDialog.Builder(MainActivity.this);
@@ -186,7 +198,8 @@ public class MainActivity extends AppCompatActivity {
                                         String userInfoUrl = userInfoJsonObject.getString("url");
                                         saveUserInfo(userInfoUrl);
                                         userData = readUserInfo();
-                                        userInformation = getUserSelfInformation(userData.SESSDATA);
+                                        assert userData != null;
+                                        userInformation = getUserSelfInformation();
                                         final Bitmap faceBitmap = getUserFaceBitmap();
                                         runOnUiThread(new Runnable() {
                                             @Override
@@ -306,7 +319,6 @@ public class MainActivity extends AppCompatActivity {
             hints.put(EncodeHintType.CHARACTER_SET, "UTF-8");
             BitMatrix bitMatrix;
             bitMatrix = new MultiFormatWriter().encode(string, BarcodeFormat.QR_CODE, 300, 300, hints);
-
             final int width=300,height=300;
             final int[] pixels = new int[width * height];
             for (int y = 0; y < height; y++) {
@@ -380,7 +392,7 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    private boolean testLogin(String SESSDATA) {
+    private boolean testLogin() {
         StringBuilder document = new StringBuilder();
         try {
             URL url = new URL("https://api.bilibili.com/x/web-interface/nav");
@@ -389,7 +401,7 @@ public class MainActivity extends AppCompatActivity {
             connection.setDoInput(true);
             connection.setRequestMethod("GET");
             connection.setUseCaches(false);
-            connection.setRequestProperty("Cookie", "SESSDATA=" + SESSDATA);
+            connection.setRequestProperty("Cookie", "SESSDATA=" + userData.SESSDATA);
             connection.connect();
             BufferedReader in = new BufferedReader(new InputStreamReader(connection.getInputStream(), StandardCharsets.UTF_8));
             String line;
@@ -418,7 +430,7 @@ public class MainActivity extends AppCompatActivity {
         return true;
     }
 
-    private UserInformation getUserSelfInformation(String SESSDATA){
+    private UserInformation getUserSelfInformation(){
         UserInformation userInformation = new UserInformation();
         StringBuilder document = new StringBuilder();
         try {
@@ -428,7 +440,7 @@ public class MainActivity extends AppCompatActivity {
             connection.setDoInput(true);
             connection.setRequestMethod("GET");
             connection.setUseCaches(false);
-            connection.setRequestProperty("Cookie", "SESSDATA=" + SESSDATA);
+            connection.setRequestProperty("Cookie", "SESSDATA=" + userData.SESSDATA);
             connection.connect();
             BufferedReader in = new BufferedReader(new InputStreamReader(connection.getInputStream(), StandardCharsets.UTF_8));
             String line;
@@ -478,6 +490,32 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    private boolean getRecommendVideo() {
+        StringBuilder document = new StringBuilder();
+        try {
+            URL url = new URL("https://api.bilibili.com/x/web-interface/nav");
+            HttpURLConnection connection = (HttpURLConnection) url
+                    .openConnection();
+            connection.setDoInput(true);
+            connection.setRequestMethod("GET");
+            connection.setUseCaches(false);
+            connection.setRequestProperty("Cookie", "SESSDATA=" + userData.SESSDATA);
+            connection.connect();
+            BufferedReader in = new BufferedReader(new InputStreamReader(connection.getInputStream(), StandardCharsets.UTF_8));
+            String line;
+            while ((line = in.readLine()) != null) {
+                document.append(line);
+            }
+            in.close();
+            JSONObject jsonObject = new JSONObject(document.toString());
+            JSONObject newJsonObject = jsonObject.getJSONObject("data");
+            return newJsonObject.getBoolean("isLogin");
+        } catch (IOException | JSONException e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
     //private boolean full
 
 
@@ -493,7 +531,44 @@ public class MainActivity extends AppCompatActivity {
 
 
 
+    @Override
+    public boolean dispatchTouchEvent(MotionEvent ev) {
+        if (ev.getAction() == MotionEvent.ACTION_DOWN) {
+            View v = getCurrentFocus();
+            if (isShouldHideKeyboard(v, ev)) {
+                hideKeyboard(v.getWindowToken());
+            }
+        }
+        return super.dispatchTouchEvent(ev);
+    }
 
+    private boolean isShouldHideKeyboard(View v, MotionEvent event) {
+        if (v != null && (v instanceof EditText)) {
+            int[] l = {0, 0};
+            v.getLocationInWindow(l);
+            int left = l[0],
+                    top = l[1],
+                    bottom = top + v.getHeight(),
+                    right = left + v.getWidth();
+            if (event.getX() > left && event.getX() < right
+                    && event.getY() > top && event.getY() < bottom) {
+                // 点击EditText的事件，忽略它。
+                return false;
+            } else {
+                return true;
+            }
+        }
+        // 如果焦点不是EditText则忽略，这个发生在视图刚绘制完，第一个焦点不在EditText上，和用户用轨迹球选择其他的焦点
+        return false;
+    }
+
+    private void hideKeyboard(IBinder token) {
+        if (token != null) {
+            InputMethodManager im = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
+            im.hideSoftInputFromWindow(token, InputMethodManager.HIDE_NOT_ALWAYS);
+            searchBar.clearFocus();
+        }
+    }
 
 
 
