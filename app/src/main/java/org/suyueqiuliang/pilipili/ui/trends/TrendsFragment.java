@@ -1,4 +1,4 @@
-package org.suyueqiuliang.pilipili.ui.dashboard;
+package org.suyueqiuliang.pilipili.ui.trends;
 
 import android.os.Bundle;
 import android.view.LayoutInflater;
@@ -10,21 +10,22 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.Observer;
+import androidx.lifecycle.ViewModelProvider;
 import androidx.lifecycle.ViewModelProviders;
 
 import org.suyueqiuliang.pilipili.R;
 
-public class DashboardFragment extends Fragment {
+public class TrendsFragment extends Fragment {
 
-    private DashboardViewModel dashboardViewModel;
+    private TrendsViewModel trendsViewModel;
 
     public View onCreateView(@NonNull LayoutInflater inflater,
                              ViewGroup container, Bundle savedInstanceState) {
-        dashboardViewModel =
-                ViewModelProviders.of(this).get(DashboardViewModel.class);
-        View root = inflater.inflate(R.layout.fragment_dashboard, container, false);
-        final TextView textView = root.findViewById(R.id.text_dashboard);
-        dashboardViewModel.getText().observe(getViewLifecycleOwner(), new Observer<String>() {
+        trendsViewModel =
+                new ViewModelProvider(this).get(TrendsViewModel.class);
+        View root = inflater.inflate(R.layout.fragment_trends, container, false);
+        final TextView textView = root.findViewById(R.id.text_trends);
+        trendsViewModel.getText().observe(getViewLifecycleOwner(), new Observer<String>() {
             @Override
             public void onChanged(@Nullable String s) {
                 textView.setText(s);

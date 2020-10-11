@@ -5,10 +5,6 @@
         <item name="colorPrimary">@color/colorPrimary</item>
         <item name="colorPrimaryDark">@color/colorPrimaryDark</item>
         <item name="colorAccent">@color/colorAccent</item>
-        <item name="android:windowTranslucentNavigation">true</item>
-        <item name="android:windowTranslucentStatus">true</item>
-        <!-- 设置statusBarColor 为透明-->
-        <item name="android:statusBarColor">@color/colorAccent</item>
     </style>
 
 </resources>

@@ -1,16 +1,16 @@
-package org.suyueqiuliang.pilipili.ui.dashboard;
+package org.suyueqiuliang.pilipili.ui.rank;
 
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
 import androidx.lifecycle.ViewModel;
 
-public class DashboardViewModel extends ViewModel {
+public class RankViewModel extends ViewModel {
 
     private MutableLiveData<String> mText;
 
-    public DashboardViewModel() {
+    public RankViewModel() {
         mText = new MutableLiveData<>();
-        mText.setValue("This is dashboard fragment");
+        mText.setValue("This is rank fragment");
     }
 
     public LiveData<String> getText() {

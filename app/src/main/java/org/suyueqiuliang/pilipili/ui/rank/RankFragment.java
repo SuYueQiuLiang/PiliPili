@@ -1,4 +1,4 @@
-package org.suyueqiuliang.pilipili.ui.home;
+package org.suyueqiuliang.pilipili.ui.rank;
 
 import android.os.Bundle;
 import android.view.LayoutInflater;
@@ -14,21 +14,22 @@ import androidx.lifecycle.ViewModelProvider;
 
 import org.suyueqiuliang.pilipili.R;
 
-public class HomeFragment extends Fragment {
+public class RankFragment extends Fragment {
 
-    private HomeViewModel homeViewModel;
+    private RankViewModel rankViewModel;
 
     public View onCreateView(@NonNull LayoutInflater inflater,
                              ViewGroup container, Bundle savedInstanceState) {
-        homeViewModel =
-                new ViewModelProvider(this).get(HomeViewModel.class);
-        View root = inflater.inflate(R.layout.fragment_home, container, false);
-        homeViewModel.getText().observe(getViewLifecycleOwner(), new Observer<String>() {
+        rankViewModel =
+                new ViewModelProvider(this).get(RankViewModel.class);
+        View root = inflater.inflate(R.layout.fragment_rank, container, false);
+        final TextView textView = root.findViewById(R.id.text_rank);
+        rankViewModel.getText().observe(getViewLifecycleOwner(), new Observer<String>() {
             @Override
             public void onChanged(@Nullable String s) {
+                textView.setText(s);
             }
         });
         return root;
     }
 }
-

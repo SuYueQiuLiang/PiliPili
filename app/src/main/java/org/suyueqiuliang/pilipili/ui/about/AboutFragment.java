@@ -1,4 +1,4 @@
-package org.suyueqiuliang.pilipili.ui.home;
+package org.suyueqiuliang.pilipili.ui.about;
 
 import android.os.Bundle;
 import android.view.LayoutInflater;
@@ -14,21 +14,22 @@ import androidx.lifecycle.ViewModelProvider;
 
 import org.suyueqiuliang.pilipili.R;
 
-public class HomeFragment extends Fragment {
+public class AboutFragment extends Fragment {
 
-    private HomeViewModel homeViewModel;
+    private AboutViewModel aboutViewModel;
 
     public View onCreateView(@NonNull LayoutInflater inflater,
                              ViewGroup container, Bundle savedInstanceState) {
-        homeViewModel =
-                new ViewModelProvider(this).get(HomeViewModel.class);
-        View root = inflater.inflate(R.layout.fragment_home, container, false);
-        homeViewModel.getText().observe(getViewLifecycleOwner(), new Observer<String>() {
+        aboutViewModel =
+                new ViewModelProvider(this).get(AboutViewModel.class);
+        View root = inflater.inflate(R.layout.fragment_about, container, false);
+        final TextView textView = root.findViewById(R.id.text_about);
+        aboutViewModel.getText().observe(getViewLifecycleOwner(), new Observer<String>() {
             @Override
             public void onChanged(@Nullable String s) {
+                textView.setText(s);
             }
         });
         return root;
     }
 }
-
