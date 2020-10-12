@@ -69,22 +69,8 @@ import java.util.Map;
 
 import javax.crypto.Cipher;
 
-class UserData{
-    String DedeUserID,DedeUserID__ckMd5,Expires,SESSDATA,bili_jct;
-}
 
-class LevelInfo{
-    //当前等级，当前等级最低经验，当前经验，当前等级最高经验
-    int current_level,current_min,current_exp,next_exp;
-}
 
-class UserInformation{
-    LevelInfo levelInfo;
-    //头像url，用户uid，用户昵称
-    String face,mid,uname;
-    //硬币数量，节操值（诚信值，70封顶），是否大会员，b币数量
-    int money,moral,vipStatus,wallet;
-}
 public class MainActivity extends AppCompatActivity {
     EditText searchBar;
     boolean wasLogin=false,keepLoginListen=false;
@@ -95,14 +81,14 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        //申请权限
 
+        //申请权限
         requestMyPermissions();
 
-        //控件变量
+        //创建一个工具类对象
+        final ToolClass toolClass = new ToolClass(MainActivity.this);
 
-        localFilePath = MainActivity.this.getExternalFilesDir("res")+"/";
-        toast(localFilePath);
+        //控件变量
         final NavigationView navView = findViewById(R.id.nav_view);
         final View navHead = navView.getHeaderView(0);
         final ImageView userHead = navHead.findViewById(R.id.user_head);
@@ -125,17 +111,17 @@ public class MainActivity extends AppCompatActivity {
 
 
         //尝试从本地读取数据登陆
-        userData = readUserInfo();
+        userData = toolClass.readUserInfo();
 
         if(userData!=null){
             new Thread(new Runnable() {
+                @SuppressLint("UseCompatLoadingForDrawables")
                 @Override
                 public void run() {
-                    wasLogin = testLogin();
+                    wasLogin = toolClass.testLogin(userData.SESSDATA);
                     if(wasLogin){
-                        userInformation = getUserSelfInformation();
-
-                        final Bitmap bitmap = getUserFaceBitmap();
+                        userInformation = toolClass.getUserSelfInformation(userData.SESSDATA);
+                        final Bitmap bitmap = toolClass.getUserFaceBitmap(userInformation.face);
                         runOnUiThread(new Runnable() {
                             @Override
                             public void run() {
@@ -144,7 +130,13 @@ public class MainActivity extends AppCompatActivity {
                             }
                         });
                     }
-                    else logout(userHead,userName);
+                    else {
+                        wasLogin = false;
+                        userData = null;
+                        userInformation = null;
+                        userHead.setImageDrawable(getDrawable(R.drawable.test_head));
+                        userName.setText(getResources().getText(R.string.login_message));
+                    }
                 }
             }).start();
         }
@@ -177,7 +169,7 @@ public class MainActivity extends AppCompatActivity {
                                 JSONObject newJsonObject = jsonObject.getJSONObject("data");
                                 String url = newJsonObject.getString("url");
                                 String oauthKey = newJsonObject.getString("oauthKey");
-                                final Bitmap bitmap = makeQrCore(url);
+                                final Bitmap bitmap = toolClass.makeQrCore(url);
                                 runOnUiThread(new Runnable() {
                                     @Override
                                     public void run() {
@@ -189,18 +181,18 @@ public class MainActivity extends AppCompatActivity {
                                 JSONObject LoginInfoJsonObject;
 
                                 while (keepLoginListen && !wasLogin) {
-                                    String LoginInfoReturn = onLoginListener(oauthKey);
+                                    String LoginInfoReturn = toolClass.onLoginListener(oauthKey);
                                     LoginInfoJsonObject = new JSONObject(LoginInfoReturn);
                                     wasLogin = LoginInfoJsonObject.getBoolean("status");
                                     if (wasLogin) {
                                         toast("已扫描确认!");
                                         JSONObject userInfoJsonObject = LoginInfoJsonObject.getJSONObject("data");
                                         String userInfoUrl = userInfoJsonObject.getString("url");
-                                        saveUserInfo(userInfoUrl);
-                                        userData = readUserInfo();
+                                        toolClass.saveUserInfo(userInfoUrl);
+                                        userData = toolClass.readUserInfo();
                                         assert userData != null;
-                                        userInformation = getUserSelfInformation();
-                                        final Bitmap faceBitmap = getUserFaceBitmap();
+                                        userInformation = toolClass.getUserSelfInformation(userData.SESSDATA);
+                                        final Bitmap faceBitmap = toolClass.getUserFaceBitmap(userData.SESSDATA);
                                         runOnUiThread(new Runnable() {
                                             @Override
                                             public void run() {
@@ -276,108 +268,7 @@ public class MainActivity extends AppCompatActivity {
 
     //带正文api获取返回值
 
-    private String onLoginListener(String oauthKey) {
-        StringBuilder document = new StringBuilder();
-        try {
-            //链接URL
-            URL url = new URL("https://passport.bilibili.com/qrcode/getLoginInfo");
-            HttpURLConnection connection = (HttpURLConnection) url
-                    .openConnection();
-            connection.setDoOutput(true);
-            connection.setDoInput(true);
-            connection.setRequestMethod("POST");
-            connection.setUseCaches(false); //不使用缓存
-            connection.setRequestProperty("Content-Type",
-                    "application/x-www-form-urlencoded");
-            connection.connect();
-            BufferedWriter out = new BufferedWriter(new OutputStreamWriter(connection.getOutputStream(), StandardCharsets.UTF_8));
-            out.write("oauthKey=" + oauthKey);
-            out.flush();
 
-            BufferedReader in = new BufferedReader(new InputStreamReader(connection.getInputStream(), StandardCharsets.UTF_8));
-            String line;
-
-            while ((line = in.readLine()) != null) {
-                    document.append(line);
-            }
-            toast(document.toString());
-
-            out.close();
-            in.close();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        return document.toString();
-    }
-
-    //使用String生成二维码
-
-    private Bitmap makeQrCore(String string){
-        Bitmap bitmap = null;
-        try {
-            Map<EncodeHintType, String> hints = new HashMap<>();
-            hints.put(EncodeHintType.CHARACTER_SET, "UTF-8");
-            BitMatrix bitMatrix;
-            bitMatrix = new MultiFormatWriter().encode(string, BarcodeFormat.QR_CODE, 300, 300, hints);
-            final int width=300,height=300;
-            final int[] pixels = new int[width * height];
-            for (int y = 0; y < height; y++) {
-                for (int x = 0; x < width; x++) {
-                    //bitMatrix.get(x,y)方法返回true是黑色色块，false是白色色块
-                    if (bitMatrix.get(x, y)) {
-                        pixels[y * width + x] =  Color.BLACK;
-                    } else {
-                        pixels[y * width + x] =  Color.WHITE;
-                    }
-                }
-            }
-            bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
-            bitmap.setPixels(pixels, 0, width, 0, 0, width, height);
-        } catch (WriterException e) {
-            e.printStackTrace();
-        }
-        return bitmap;
-    }
-
-    private boolean saveUserInfo(String url) {
-        try {
-            UserData userData = new UserData();
-            String params = url.substring(url.indexOf("?") + 1);
-            userData.DedeUserID = params.substring(params.indexOf("=") + 1,params.indexOf("&"));
-            params = params.substring(params.indexOf("&") + 1);
-            userData.DedeUserID__ckMd5 = params.substring(params.indexOf("=") + 1,params.indexOf("&"));
-            params = params.substring(params.indexOf("&") + 1);
-            userData.Expires = params.substring(params.indexOf("=") + 1,params.indexOf("&"));
-            params = params.substring(params.indexOf("&") + 1);
-            userData.SESSDATA = params.substring(params.indexOf("=") + 1,params.indexOf("&"));
-            params = params.substring(params.indexOf("&") + 1);
-            userData.bili_jct = params.substring(params.indexOf("=") + 1,params.indexOf("&"));
-            byte[] saveData = (userData.DedeUserID + "\n" + userData.DedeUserID__ckMd5 + "\n" + userData.Expires +"\n" + userData.SESSDATA + "\n" + userData.bili_jct).getBytes();
-            OutputStream outputStream = new FileOutputStream(localFilePath + "userInfo.inf");
-            outputStream.write(saveData);
-            outputStream.close();
-            return true;
-        } catch (IOException e) {
-            e.printStackTrace();
-            return false;
-        }
-    }
-    private UserData readUserInfo(){
-        UserData userData = new UserData();
-        try {
-            InputStream inputStream = new FileInputStream(localFilePath + "userInfo.inf");
-            BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(inputStream));
-            userData.DedeUserID = bufferedReader.readLine();
-            userData.DedeUserID__ckMd5 = bufferedReader.readLine();
-            userData.Expires = bufferedReader.readLine();
-            userData.SESSDATA = bufferedReader.readLine();
-            userData.bili_jct = bufferedReader.readLine();
-        } catch (IOException e) {
-            e.printStackTrace();
-            return null;
-        }
-        return userData;
-    }
 
     private void requestMyPermissions() {
         if (ContextCompat.checkSelfPermission(this,
@@ -392,131 +283,9 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    private boolean testLogin() {
-        StringBuilder document = new StringBuilder();
-        try {
-            URL url = new URL("https://api.bilibili.com/x/web-interface/nav");
-            HttpURLConnection connection = (HttpURLConnection) url
-                    .openConnection();
-            connection.setDoInput(true);
-            connection.setRequestMethod("GET");
-            connection.setUseCaches(false);
-            connection.setRequestProperty("Cookie", "SESSDATA=" + userData.SESSDATA);
-            connection.connect();
-            BufferedReader in = new BufferedReader(new InputStreamReader(connection.getInputStream(), StandardCharsets.UTF_8));
-            String line;
-            while ((line = in.readLine()) != null) {
-                document.append(line);
-            }
-            in.close();
-            JSONObject jsonObject = new JSONObject(document.toString());
-            JSONObject newJsonObject = jsonObject.getJSONObject("data");
-            return newJsonObject.getBoolean("isLogin");
-        } catch (IOException | JSONException e) {
-            e.printStackTrace();
-            return false;
-        }
-    }
 
-    @SuppressLint("UseCompatLoadingForDrawables")
-    private boolean logout(ImageView faceImageView, TextView userNameView){
-        File file = new File(localFilePath + "userInfo.inf");
-        final boolean delete = file.delete();
-        wasLogin = false;
-        userData = null;
-        userInformation = null;
-        faceImageView.setImageDrawable(getDrawable(R.drawable.test_head));
-        userNameView.setText(getResources().getText(R.string.login_message));
-        return true;
-    }
 
-    private UserInformation getUserSelfInformation(){
-        UserInformation userInformation = new UserInformation();
-        StringBuilder document = new StringBuilder();
-        try {
-            URL url = new URL("https://api.bilibili.com/x/web-interface/nav");
-            HttpURLConnection connection = (HttpURLConnection) url
-                    .openConnection();
-            connection.setDoInput(true);
-            connection.setRequestMethod("GET");
-            connection.setUseCaches(false);
-            connection.setRequestProperty("Cookie", "SESSDATA=" + userData.SESSDATA);
-            connection.connect();
-            BufferedReader in = new BufferedReader(new InputStreamReader(connection.getInputStream(), StandardCharsets.UTF_8));
-            String line;
-            while ((line = in.readLine()) != null) {
-                document.append(line);
-            }
-            in.close();
-            System.out.println(document);
-            JSONObject jsonObject = new JSONObject(document.toString());
-            JSONObject data = jsonObject.getJSONObject("data");
-            userInformation.face = data.getString("face");
-            userInformation.mid = data.getString("mid");
-            userInformation.money = data.getInt("money");
-            userInformation.moral = data.getInt("moral");
-            userInformation.uname = data.getString("uname");
-            userInformation.vipStatus = data.getInt("vipStatus");
-            JSONObject wallet = data.getJSONObject("wallet");
-            userInformation.wallet = wallet.getInt("bcoin_balance");
-            JSONObject level_info = data.getJSONObject("level_info");
-            LevelInfo levelInfo = new LevelInfo();
-            levelInfo.current_level = level_info.getInt("current_level");
-            levelInfo.current_min = level_info.getInt("current_min");
-            levelInfo.current_exp = level_info.getInt("current_level");
-            levelInfo.next_exp = level_info.getInt("next_exp");
-            userInformation.levelInfo = levelInfo;
-            return userInformation;
-        } catch (IOException | JSONException e) {
-            e.printStackTrace();
-            return null;
-        }
-    }
 
-    private Bitmap getUserFaceBitmap(){
-        try {
-            URL url = new URL(userInformation.face);
-            URLConnection urlConnection = url.openConnection();
-            urlConnection.setDoInput(true);
-            urlConnection.setUseCaches(false);//不缓存
-            urlConnection.connect();
-            InputStream is = urlConnection.getInputStream();//获得图片的数据流
-            Bitmap bmp = BitmapFactory.decodeStream(is);
-            is.close();
-            return  bmp;
-        } catch (IOException e) {
-            e.printStackTrace();
-            return null;
-        }
-    }
-
-    private boolean getRecommendVideo() {
-        StringBuilder document = new StringBuilder();
-        try {
-            URL url = new URL("https://api.bilibili.com/x/web-interface/nav");
-            HttpURLConnection connection = (HttpURLConnection) url
-                    .openConnection();
-            connection.setDoInput(true);
-            connection.setRequestMethod("GET");
-            connection.setUseCaches(false);
-            connection.setRequestProperty("Cookie", "SESSDATA=" + userData.SESSDATA);
-            connection.connect();
-            BufferedReader in = new BufferedReader(new InputStreamReader(connection.getInputStream(), StandardCharsets.UTF_8));
-            String line;
-            while ((line = in.readLine()) != null) {
-                document.append(line);
-            }
-            in.close();
-            JSONObject jsonObject = new JSONObject(document.toString());
-            JSONObject newJsonObject = jsonObject.getJSONObject("data");
-            return newJsonObject.getBoolean("isLogin");
-        } catch (IOException | JSONException e) {
-            e.printStackTrace();
-            return false;
-        }
-    }
-
-    //private boolean full
 
 
 
