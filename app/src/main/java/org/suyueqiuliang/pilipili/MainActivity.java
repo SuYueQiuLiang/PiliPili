@@ -192,7 +192,7 @@ public class MainActivity extends AppCompatActivity {
                                         userData = toolClass.readUserInfo();
                                         assert userData != null;
                                         userInformation = toolClass.getUserSelfInformation(userData.SESSDATA);
-                                        final Bitmap faceBitmap = toolClass.getUserFaceBitmap(userData.SESSDATA);
+                                        final Bitmap faceBitmap = toolClass.getUserFaceBitmap(userInformation.face);
                                         runOnUiThread(new Runnable() {
                                             @Override
                                             public void run() {

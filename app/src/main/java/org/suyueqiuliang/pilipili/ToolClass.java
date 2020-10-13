@@ -1,12 +1,9 @@
 package org.suyueqiuliang.pilipili;
 
-import android.annotation.SuppressLint;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Color;
-import android.widget.ImageView;
-import android.widget.TextView;
 
 import com.google.zxing.BarcodeFormat;
 import com.google.zxing.EncodeHintType;
@@ -255,10 +252,10 @@ public class ToolClass {
         return document.toString();
     }
 
-    private boolean getRecommendVideo(String SESSDATA) {
+    private boolean getRecommendVideo(String SESSDATA,String rid) {
         StringBuilder document = new StringBuilder();
         try {
-            URL url = new URL("https://api.bilibili.com/x/web-interface/nav");
+            URL url = new URL(String.format("https://api.bilibili.com/x/web-interface/dynamic/region?ps=20&rid=%s",rid));
             HttpURLConnection connection = (HttpURLConnection) url
                     .openConnection();
             connection.setDoInput(true);
