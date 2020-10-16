@@ -11,6 +11,7 @@ import com.google.zxing.MultiFormatWriter;
 import com.google.zxing.WriterException;
 import com.google.zxing.common.BitMatrix;
 
+import org.apache.commons.codec.binary.Base64;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -24,12 +25,22 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
+import java.math.BigInteger;
 import java.net.HttpURLConnection;
+import java.net.InetAddress;
 import java.net.URL;
 import java.net.URLConnection;
+import java.net.UnknownHostException;
 import java.nio.charset.StandardCharsets;
+import java.security.KeyFactory;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.security.interfaces.RSAPublicKey;
+import java.security.spec.X509EncodedKeySpec;
 import java.util.HashMap;
 import java.util.Map;
+
+import javax.crypto.Cipher;
 
 class UserData{
     String DedeUserID,DedeUserID__ckMd5,Expires,SESSDATA,bili_jct;
@@ -48,13 +59,37 @@ class UserInformation{
     int money,moral,vipStatus,wallet;
 }
 
+class LoginKey{
+    String hash,RSAPublicKey;
+    public LoginKey(String hash,String RSAPublicKey){
+        this.hash = hash;
+        this.RSAPublicKey = RSAPublicKey;
+    }
+}
+
 public class ToolClass {
     private String localFilePath;
-
+    private Context context;
+    private final String appkey = "1d8b6e7d45233436";
+    private final String appSecKey = "560c52ccd288fed045859ed18bffd973";
+    private String app_head;
+    private String api_head;
+    private final String getKey = "https://passport.bilibili.com/api/oauth2/getKey";
     public ToolClass(Context context){
+        this.context = context;
         this.localFilePath = context.getExternalFilesDir("res")+"/";
     }
-
+    public LoginKey getLoginKey(){
+        try {
+            JSONObject jsonObject = new JSONObject(urlPostRequest( getKey , getSign("appkey=" + appkey)));
+            jsonObject = jsonObject.getJSONObject("data");
+            LoginKey loginKey = new LoginKey(jsonObject.getString("hash"),jsonObject.getString("key"));
+            return loginKey;
+        } catch (JSONException e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
 
     public boolean saveUserInfo(String url) {
         try {
@@ -79,8 +114,6 @@ public class ToolClass {
             return false;
         }
     }
-
-
     public UserData readUserInfo(){
         UserData userData = new UserData();
         try {
@@ -97,8 +130,6 @@ public class ToolClass {
         }
         return userData;
     }
-
-
     public Bitmap makeQrCore(String string){
         Bitmap bitmap = null;
         try {
@@ -110,7 +141,6 @@ public class ToolClass {
             final int[] pixels = new int[width * height];
             for (int y = 0; y < height; y++) {
                 for (int x = 0; x < width; x++) {
-                    //bitMatrix.get(x,y)方法返回true是黑色色块，false是白色色块
                     if (bitMatrix.get(x, y)) {
                         pixels[y * width + x] =  Color.BLACK;
                     } else {
@@ -125,7 +155,6 @@ public class ToolClass {
         }
         return bitmap;
     }
-
     public boolean testLogin(String SESSDATA) {
         StringBuilder document = new StringBuilder();
         try {
@@ -151,14 +180,11 @@ public class ToolClass {
             return false;
         }
     }
-
-
     public boolean logout(){
         File file = new File(localFilePath + "userInfo.inf");
         final boolean delete = file.delete();
         return true;
     }
-
     public UserInformation getUserSelfInformation(String SESSDATA){
         UserInformation userInformation = new UserInformation();
         StringBuilder document = new StringBuilder();
@@ -201,7 +227,6 @@ public class ToolClass {
             return null;
         }
     }
-
     public Bitmap getUserFaceBitmap(String faceUrl){
         try {
             URL url = new URL(faceUrl);
@@ -218,50 +243,75 @@ public class ToolClass {
             return null;
         }
     }
-
-    public String onLoginListener(String oauthKey) {
+    public String urlPostRequest(String urlStr,String postData) {
         StringBuilder document = new StringBuilder();
         try {
             //链接URL
-            URL url = new URL("https://passport.bilibili.com/qrcode/getLoginInfo");
+            URL url = new URL(urlStr);
             HttpURLConnection connection = (HttpURLConnection) url
                     .openConnection();
             connection.setDoOutput(true);
             connection.setDoInput(true);
             connection.setRequestMethod("POST");
             connection.setUseCaches(false); //不使用缓存
-            connection.setRequestProperty("Content-Type",
-                    "application/x-www-form-urlencoded");
+            connection.setRequestProperty("Content-Type", "application/x-www-form-urlencoded");
             connection.connect();
             BufferedWriter out = new BufferedWriter(new OutputStreamWriter(connection.getOutputStream(), StandardCharsets.UTF_8));
-            out.write("oauthKey=" + oauthKey);
+            out.write(postData);
             out.flush();
-
             BufferedReader in = new BufferedReader(new InputStreamReader(connection.getInputStream(), StandardCharsets.UTF_8));
             String line;
-
             while ((line = in.readLine()) != null) {
                 document.append(line);
             }
-
             out.close();
             in.close();
+            return document.toString();
         } catch (IOException e) {
             e.printStackTrace();
+            return null;
         }
-        return document.toString();
     }
-
-    private boolean getRecommendVideo(String SESSDATA,String rid) {
+    public String urlPostRequestWithCookie(String urlStr,String Cookie,String postData) {
         StringBuilder document = new StringBuilder();
         try {
-            URL url = new URL(String.format("https://api.bilibili.com/x/web-interface/dynamic/region?ps=20&rid=%s",rid));
+            //链接URL
+            URL url = new URL(urlStr);
+            HttpURLConnection connection = (HttpURLConnection) url
+                    .openConnection();
+            connection.setDoOutput(true);
+            connection.setDoInput(true);
+            connection.setRequestMethod("POST");
+            connection.setRequestProperty("Cookie",Cookie);
+            connection.setUseCaches(false); //不使用缓存
+            connection.setRequestProperty("Content-Type", "application/x-www-form-urlencoded");
+            connection.connect();
+            BufferedWriter out = new BufferedWriter(new OutputStreamWriter(connection.getOutputStream(), StandardCharsets.UTF_8));
+            out.write(postData);
+            out.flush();
+            BufferedReader in = new BufferedReader(new InputStreamReader(connection.getInputStream(), StandardCharsets.UTF_8));
+            String line;
+            while ((line = in.readLine()) != null) {
+                document.append(line);
+            }
+            out.close();
+            in.close();
+            return document.toString();
+        } catch (IOException e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+    private String urlGetRequestWithCookie(String urlStr,String Cookie) {
+        StringBuilder document = new StringBuilder();
+        try {
+            URL url = new URL(urlStr);
             HttpURLConnection connection = (HttpURLConnection) url
                     .openConnection();
             connection.setDoInput(true);
             connection.setRequestMethod("GET");
             connection.setUseCaches(false);
-            connection.setRequestProperty("Cookie", "SESSDATA=" + SESSDATA);
+            connection.setRequestProperty("Cookie",Cookie);
             connection.connect();
             BufferedReader in = new BufferedReader(new InputStreamReader(connection.getInputStream(), StandardCharsets.UTF_8));
             String line;
@@ -269,12 +319,69 @@ public class ToolClass {
                 document.append(line);
             }
             in.close();
-            JSONObject jsonObject = new JSONObject(document.toString());
-            JSONObject newJsonObject = jsonObject.getJSONObject("data");
-            return newJsonObject.getBoolean("isLogin");
-        } catch (IOException | JSONException e) {
+            return document.toString();
+        } catch (IOException e) {
             e.printStackTrace();
-            return false;
+            return null;
         }
+    }
+    public String urlGetRequest(String urlStr){
+        StringBuilder document = new StringBuilder();
+        try {
+            URL url = new URL(urlStr);
+            HttpURLConnection connection = (HttpURLConnection) url
+                    .openConnection();
+            connection.setDoInput(true);
+            connection.setRequestMethod("GET");
+            connection.setUseCaches(false);
+            connection.connect();
+            BufferedReader in = new BufferedReader(new InputStreamReader(connection.getInputStream(), StandardCharsets.UTF_8));
+            String line;
+            while ((line = in.readLine()) != null) {
+                document.append(line);
+            }
+            in.close();
+            return document.toString();
+        } catch (IOException e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+    public String encrypt( String str) throws Exception{
+        //base64编码的公钥
+        byte[] decoded = Base64.decodeBase64("-----BEGIN PUBLIC KEY-----\n" +
+                "MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDjb4V7EidX/ym28t2ybo0U6t0n\n" +
+                "6p4ej8VjqKHg100va6jkNbNTrLQqMCQCAYtXMXXp2Fwkk6WR+12N9zknLjf+C9sx\n" +
+                "/+l48mjUU8RqahiFD1XT/u2e0m2EN029OhCgkHx3Fc/KlFSIbak93EH/XlYis0w+\n" +
+                "Xl69GV6klzgxW6d2xQIDAQAB\n" +
+                "-----END PUBLIC KEY-----");
+        RSAPublicKey pubKey = (RSAPublicKey) KeyFactory.getInstance("RSA").generatePublic(new X509EncodedKeySpec(decoded));
+        //RSA加密
+        Cipher cipher = Cipher.getInstance("RSA");
+        cipher.init(Cipher.ENCRYPT_MODE, pubKey);
+        return Base64.encodeBase64String(cipher.doFinal(str.getBytes(StandardCharsets.UTF_8)));
+    }
+    public String getSign(String parameter){
+        try {
+            MessageDigest md5 = MessageDigest.getInstance("MD5");
+            md5.update((parameter + context.getString(R.string.appsec)).getBytes());
+            byte[] byteArray = md5.digest();
+            BigInteger bigInt = new BigInteger(1, byteArray);
+            // 参数16表示16进制
+            String result = bigInt.toString(16);
+            // 不足32位高位补零
+            while (result.length() < 32) {
+                result = "0" + result;
+            }
+            return parameter + "&sign=" + result;
+        }catch (NoSuchAlgorithmException e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+    private boolean isNetworking() throws IOException {
+        int timeOut = 3000;
+        boolean status = InetAddress.getByName("www.bilibili.com").isReachable(timeOut);
+        return status;
     }
 }

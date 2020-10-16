@@ -7,11 +7,7 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.pm.PackageManager;
 import android.content.res.ColorStateList;
-import android.content.res.Resources;
 import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
-import android.graphics.Color;
-import android.media.Image;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.view.LayoutInflater;
@@ -34,38 +30,15 @@ import androidx.navigation.Navigation;
 import androidx.navigation.ui.NavigationUI;
 
 import com.google.android.material.navigation.NavigationView;
-import com.google.zxing.BarcodeFormat;
-import com.google.zxing.EncodeHintType;
-import com.google.zxing.MultiFormatWriter;
-import com.google.zxing.WriterException;
-import com.google.zxing.common.BitMatrix;
 
 import org.apache.commons.codec.binary.Base64;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import java.io.BufferedReader;
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.OutputStream;
-import java.io.OutputStreamWriter;
-import java.io.UnsupportedEncodingException;
-import java.net.HttpURLConnection;
-import java.net.MalformedURLException;
-import java.net.URL;
-import java.net.URLConnection;
 import java.nio.charset.StandardCharsets;
 import java.security.KeyFactory;
 import java.security.interfaces.RSAPublicKey;
 import java.security.spec.X509EncodedKeySpec;
-import java.util.HashMap;
-import java.util.Map;
 
 import javax.crypto.Cipher;
 
@@ -74,7 +47,6 @@ import javax.crypto.Cipher;
 public class MainActivity extends AppCompatActivity {
     EditText searchBar;
     boolean wasLogin=false,keepLoginListen=false;
-    String localFilePath;
     UserData userData;
     UserInformation userInformation;
     @Override
@@ -108,6 +80,14 @@ public class MainActivity extends AppCompatActivity {
         //getWindow().clearFlags(WindowManager.LayoutParams.FLAG_TRANSLUCENT_STATUS);
         getWindow().setStatusBarColor(getColor(R.color.colorAccent));
 
+
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                String auu = toolClass.urlPostRequest("http://passport.bilibili.com/api/oauth2/getKey", toolClass.getSign("appkey=" + getString(R.string.appkey)));
+                toast(auu);
+            }
+        }).start();
 
 
         //尝试从本地读取数据登陆
@@ -163,50 +143,9 @@ public class MainActivity extends AppCompatActivity {
                     new Thread(new Runnable() {
                         @Override
                         public void run() {
-                            try {
-                                String apiReturn = getNoContentAPIReturn("https://passport.bilibili.com/qrcode/getLoginUrl");
-                                JSONObject jsonObject = new JSONObject(apiReturn);
-                                JSONObject newJsonObject = jsonObject.getJSONObject("data");
-                                String url = newJsonObject.getString("url");
-                                String oauthKey = newJsonObject.getString("oauthKey");
-                                final Bitmap bitmap = toolClass.makeQrCore(url);
-                                runOnUiThread(new Runnable() {
-                                    @Override
-                                    public void run() {
-                                        qr_core.setImageBitmap(bitmap);
-                                    }
-                                });
-                                System.out.println(oauthKey);
-                                keepLoginListen = true;
-                                JSONObject LoginInfoJsonObject;
+                            LoginKey loginKey = toolClass.getLoginKey();
+                            if (loginKey != null) {
 
-                                while (keepLoginListen && !wasLogin) {
-                                    String LoginInfoReturn = toolClass.onLoginListener(oauthKey);
-                                    LoginInfoJsonObject = new JSONObject(LoginInfoReturn);
-                                    wasLogin = LoginInfoJsonObject.getBoolean("status");
-                                    if (wasLogin) {
-                                        toast("已扫描确认!");
-                                        JSONObject userInfoJsonObject = LoginInfoJsonObject.getJSONObject("data");
-                                        String userInfoUrl = userInfoJsonObject.getString("url");
-                                        toolClass.saveUserInfo(userInfoUrl);
-                                        userData = toolClass.readUserInfo();
-                                        assert userData != null;
-                                        userInformation = toolClass.getUserSelfInformation(userData.SESSDATA);
-                                        final Bitmap faceBitmap = toolClass.getUserFaceBitmap(userInformation.face);
-                                        runOnUiThread(new Runnable() {
-                                            @Override
-                                            public void run() {
-                                                userHead.setImageBitmap(faceBitmap);
-                                                userName.setText(userInformation.uname);
-                                            }
-                                        });
-                                        dialog.dismiss();
-                                    }
-                                    Thread.sleep(1000);
-                                }
-
-                            } catch (JSONException | InterruptedException e) {
-                                e.printStackTrace();
                             }
                         }
                     }).start();
@@ -226,7 +165,6 @@ public class MainActivity extends AppCompatActivity {
                                             inputUserPassword.setFocusable(false);
                                         }
                                     });
-                                    System.out.println("password after encrypt:" + encryption(userPassword));
                                 }
                             }).start();
                         }
@@ -245,30 +183,6 @@ public class MainActivity extends AppCompatActivity {
             }
         });
     }
-
-    //一般无正文api获取返回值
-
-    private String getNoContentAPIReturn(String urlStr){
-        StringBuilder document = new StringBuilder();
-        try {
-            URL url = new URL(urlStr);
-            URLConnection conn = url.openConnection();
-            BufferedReader reader = new BufferedReader(new InputStreamReader(conn.getInputStream(), StandardCharsets.UTF_8));
-            String line;
-            while ((line = reader.readLine()) != null) {
-                document.append(line);
-            }
-            reader.close();
-            System.out.println(document);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        return document.toString();
-    }
-
-    //带正文api获取返回值
-
-
 
     private void requestMyPermissions() {
         if (ContextCompat.checkSelfPermission(this,
@@ -353,40 +267,4 @@ public class MainActivity extends AppCompatActivity {
     private void toast(String s){
         System.out.println(s);
     }
-
-    private String encryption(String password){
-        try {
-            String returnString = getNoContentAPIReturn("https://passport.bilibili.com/login?act=getkey");
-            int n1 = 0, n2, i = 3;
-            String hash, publicKey;
-            while (i-- != 0) {
-                n1 = returnString.indexOf('\"', n1 + 1);
-            }
-            n2 = returnString.indexOf('\"', n1 + 1);
-            hash = returnString.substring(n1 + 1, n2);
-            n1 = returnString.indexOf("\":\"",n2);
-            n2 = returnString.indexOf('"',n1+3);
-            publicKey = returnString.substring(n1+31, n2-28);
-            publicKey = publicKey.replace("\\n","");
-            System.out.println("RAS publicKey:" + publicKey);
-            hash += password;
-            return encrypt(hash,publicKey);
-        }catch (Exception e) {
-            e.printStackTrace();
-            return null;
-        }
-    }
-
-
-    public static String encrypt( String str, String publicKey ) throws Exception{
-        //base64编码的公钥
-        byte[] decoded = Base64.decodeBase64(publicKey);
-        RSAPublicKey pubKey = (RSAPublicKey) KeyFactory.getInstance("RSA").generatePublic(new X509EncodedKeySpec(decoded));
-        //RSA加密
-        Cipher cipher = Cipher.getInstance("RSA");
-        cipher.init(Cipher.ENCRYPT_MODE, pubKey);
-        return Base64.encodeBase64String(cipher.doFinal(str.getBytes(StandardCharsets.UTF_8)));
-    }
-
-
 }

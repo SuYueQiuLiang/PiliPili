@@ -2,7 +2,7 @@
 <resources>
     <color name="colorPrimary">#E91E63</color>
     <color name="colorPrimaryDark">#851339</color>
-    <color name="colorAccent">#BCE91E63</color>
-    <color name="barColor">#00FFFFFF</color>
+    <color name="colorAccent">#fb7299</color>
+    <color name="rame">#3399ff</color>
     <color name="black">#000000</color>
 </resources>
