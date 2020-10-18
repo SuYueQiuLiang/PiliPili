@@ -134,7 +134,7 @@ public class MainActivity extends AppCompatActivity {
                         wasLogin = false;
                         userData = null;
                         userInformation = null;
-                        userHead.setImageDrawable(getDrawable(R.drawable.test_head));
+                        userHead.setImageDrawable(getDrawable(R.drawable.avatar_square_grey));
                         userName.setText(getResources().getText(R.string.login_message));
                     }
                 }
