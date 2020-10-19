@@ -84,15 +84,14 @@ public class MainActivity extends AppCompatActivity {
         new Thread(new Runnable() {
             @Override
             public void run() {
-                String auu = toolClass.urlPostRequest("http://passport.bilibili.com/api/oauth2/getKey", toolClass.getSign("appkey=" + getString(R.string.appkey)));
-                toast(auu);
+                String aa = toolClass.Login("","");
             }
         }).start();
 
 
         //尝试从本地读取数据登陆
         userData = toolClass.readUserInfo();
-
+        /*
         if(userData!=null){
             new Thread(new Runnable() {
                 @SuppressLint("UseCompatLoadingForDrawables")
@@ -120,7 +119,7 @@ public class MainActivity extends AppCompatActivity {
                 }
             }).start();
         }
-
+        */
         //监听事件
 
         userHead.setOnClickListener(new View.OnClickListener() {
@@ -143,10 +142,7 @@ public class MainActivity extends AppCompatActivity {
                     new Thread(new Runnable() {
                         @Override
                         public void run() {
-                            LoginKey loginKey = toolClass.getLoginKey();
-                            if (loginKey != null) {
 
-                            }
                         }
                     }).start();
                     loggingButton.setOnClickListener(new View.OnClickListener() {
@@ -226,7 +222,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private boolean isShouldHideKeyboard(View v, MotionEvent event) {
-        if (v != null && (v instanceof EditText)) {
+        if ((v instanceof EditText)) {
             int[] l = {0, 0};
             v.getLocationInWindow(l);
             int left = l[0],

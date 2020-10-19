@@ -17,9 +17,4 @@
     <string name="not_login_message">未登陆</string>
     <string name="login_message">登陆账号</string>
 
-    <string name="appkey">1d8b6e7d45233436</string>
-    <string name="appsec">560c52ccd288fed045859ed18bffd973</string>
-
-
-    <string name="get_key">https://passport.bilibili.com/api/oauth2/getKey</string>
 </resources>
