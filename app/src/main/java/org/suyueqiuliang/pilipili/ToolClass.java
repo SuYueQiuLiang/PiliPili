@@ -53,7 +53,8 @@ import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.NoSuchPaddingException;
 
 class UserData{
-    String DedeUserID,DedeUserID__ckMd5,Expires,SESSDATA,bili_jct;
+    //expires_in到期时间
+    String access_token,refresh_token,expires_in,bili_jct,Expires,DedeUserID,DedeUserID__ckMd5,sid,SESSDATA;
 }
 
 class LevelInfo{
@@ -63,27 +64,26 @@ class LevelInfo{
         this.current_exp = current_exp;
         this.next_exp = next_exp;
     }
-
     //当前等级，当前等级最低经验，当前经验，当前等级最高经验
     int current_level,current_min,current_exp,next_exp;
 }
 
 class UserInformation{
-    LevelInfo levelInfo;
-    //头像url，用户uid，用户昵称
-    String face,mid,uname;
-    //硬币数量，节操值（诚信值，70封顶），是否大会员，b币数量
-    int money,moral,vipStatus,wallet;
-    public UserInformation(LevelInfo levelInfo, String face, String mid, String uname, int money, int moral, int vipStatus, int wallet) {
-        this.levelInfo = levelInfo;
-        this.face = face;
+    public UserInformation(String mid, String name, String sign, int coins, String face, int sex, int level, boolean vip) {
         this.mid = mid;
-        this.uname = uname;
-        this.money = money;
-        this.moral = moral;
-        this.vipStatus = vipStatus;
-        this.wallet = wallet;
+        this.name = name;
+        this.sign = sign;
+        this.coins = coins;
+        this.face = face;
+        this.sex = sex;
+        this.level = level;
+        this.vip = vip;
     }
+    //mid，用户名，签名，头像url，性别
+    String mid,name,sign,face;
+    //硬币，性别（0保密，1男，2女），等级
+    int coins,sex,level;
+    boolean vip;
 }
 
 class LoginKey{
@@ -104,19 +104,19 @@ public class ToolClass {
     private final String localFilePath;
     private final String appKey = "4409e2ce8ffd12b8";
     private final String appSecKey = "59b43e04ad6965f34319062b478f83dd";
-    private String app_head;
-    private String api_head;
 
+    private final String app_head = "http://app.bilibili.com";
+    private final String api_head = "http://api.bilibili.com";
     private final String passportHead = "http://passport.bilibili.com";
 
 
     private final String getKeyUrl = passportHead + "/api/oauth2/getKey";
     private final String loginUrl = passportHead + "/api/v3/oauth2/login";
+    private final String userInfo = app_head + "/x/v2/account/myinfo";
     public ToolClass(Context context){
         this.localFilePath = context.getExternalFilesDir("res")+"/";
     }
-    @RequiresApi(api = Build.VERSION_CODES.O)
-    public String Login(String username, String password){
+    public String login(String username, String password){
         try {
             UrlReply urlReply = urlPostRequest(getKeyUrl , getSign("appkey=" + appKey));
             saveSid(getCookie(urlReply.cookie,"sid"));
@@ -125,32 +125,49 @@ public class ToolClass {
             LoginKey loginKey = new LoginKey(jsonObject.getString("hash"),subStringRSAPublicKey(jsonObject.getString("key")));
             Log.d("RSAPublicKey",loginKey.RSAPublicKey);
             UrlReply urlReply1 = urlPostRequestWithCookie(loginUrl,"sid=" + readSid(),getSign("appkey=" + URLEncoder.encode(appKey,"UTF-8") + "&mobi_app=android&password=" + URLEncoder.encode(encrypt(password, loginKey),"UTF-8")  + "&platform=android&ts=" + URLEncoder.encode(String.valueOf(System.currentTimeMillis()/1000),"UTF-8") + "&username="+URLEncoder.encode(username,"UTF-8")));
-            Log.d("LoginReturn",urlReply1.json);
-            return null;
+            Log.d("loginReturn",urlReply1.json);
+            return urlReply1.json;
         } catch (JSONException | UnsupportedEncodingException e) {
             e.printStackTrace();
             return null;
         }
     }
-    public boolean saveUserInfo(String url) {
+    public String loginWithIdentifyingCode(String username,String password){
+        try {
+            UrlReply urlReply = urlPostRequest(getKeyUrl , getSign("appkey=" + appKey));
+            saveSid(getCookie(urlReply.cookie,"sid"));
+            JSONObject jsonObject = new JSONObject(urlReply.json);
+            jsonObject = jsonObject.getJSONObject("data");
+            LoginKey loginKey = new LoginKey(jsonObject.getString("hash"),subStringRSAPublicKey(jsonObject.getString("key")));
+            Log.d("RSAPublicKey",loginKey.RSAPublicKey);
+            UrlReply urlReply1 = urlPostRequestWithCookie(loginUrl,"sid=" + readSid(),getSign("appkey=" + URLEncoder.encode(appKey,"UTF-8") + "&mobi_app=android&password=" + URLEncoder.encode(encrypt(password, loginKey),"UTF-8")  + "&platform=android&ts=" + URLEncoder.encode(String.valueOf(getCurrentTimeMillis()),"UTF-8") + "&username="+URLEncoder.encode(username,"UTF-8")));
+            Log.d("loginReturn",urlReply1.json);
+            return urlReply1.json;
+        } catch (JSONException | UnsupportedEncodingException e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+    public boolean saveUserInfo(JSONObject jsonObject) {
         try {
             UserData userData = new UserData();
-            String params = url.substring(url.indexOf("?") + 1);
-            userData.DedeUserID = params.substring(params.indexOf("=") + 1,params.indexOf("&"));
-            params = params.substring(params.indexOf("&") + 1);
-            userData.DedeUserID__ckMd5 = params.substring(params.indexOf("=") + 1,params.indexOf("&"));
-            params = params.substring(params.indexOf("&") + 1);
-            userData.Expires = params.substring(params.indexOf("=") + 1,params.indexOf("&"));
-            params = params.substring(params.indexOf("&") + 1);
-            userData.SESSDATA = params.substring(params.indexOf("=") + 1,params.indexOf("&"));
-            params = params.substring(params.indexOf("&") + 1);
-            userData.bili_jct = params.substring(params.indexOf("=") + 1,params.indexOf("&"));
-            byte[] saveData = (userData.DedeUserID + "\n" + userData.DedeUserID__ckMd5 + "\n" + userData.Expires +"\n" + userData.SESSDATA + "\n" + userData.bili_jct).getBytes();
+            userData.access_token = jsonObject.getJSONObject("token_info").getString("access_token");
+            userData.refresh_token = jsonObject.getJSONObject("token_info").getString("refresh_token");
+            userData.expires_in = jsonObject.getJSONObject("token_info").getString("expires_in");
+            userData.bili_jct = jsonObject.getJSONObject("cookie_info").getJSONArray("cookies").getJSONObject(0).getString("value");
+            userData.Expires = jsonObject.getJSONObject("cookie_info").getJSONArray("cookies").getJSONObject(0).getString("expires");
+            userData.DedeUserID = jsonObject.getJSONObject("cookie_info").getJSONArray("cookies").getJSONObject(1).getString("value");
+            userData.DedeUserID__ckMd5 = jsonObject.getJSONObject("cookie_info").getJSONArray("cookies").getJSONObject(2).getString("value");
+            userData.sid = jsonObject.getJSONObject("cookie_info").getJSONArray("cookies").getJSONObject(3).getString("value");
+            userData.SESSDATA = jsonObject.getJSONObject("cookie_info").getJSONArray("cookies").getJSONObject(4).getString("value");
+            byte[] saveData = (userData.access_token + "\n" + userData.refresh_token + "\n" + userData.expires_in +"\n"
+                    + userData.bili_jct + "\n" + userData.Expires + "\n" + userData.DedeUserID + "\n" + userData.DedeUserID__ckMd5 + "\n"
+                    + userData.sid + "\n" + userData.SESSDATA).getBytes();
             OutputStream outputStream = new FileOutputStream(localFilePath + "userInfo.inf");
             outputStream.write(saveData);
             outputStream.close();
             return true;
-        } catch (IOException e) {
+        } catch (IOException | JSONException e) {
             e.printStackTrace();
             return false;
         }
@@ -160,11 +177,15 @@ public class ToolClass {
         try {
             InputStream inputStream = new FileInputStream(localFilePath + "userInfo.inf");
             BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(inputStream));
+            userData.access_token = bufferedReader.readLine();
+            userData.refresh_token = bufferedReader.readLine();
+            userData.expires_in = bufferedReader.readLine();
+            userData.bili_jct = bufferedReader.readLine();
+            userData.Expires = bufferedReader.readLine();
             userData.DedeUserID = bufferedReader.readLine();
             userData.DedeUserID__ckMd5 = bufferedReader.readLine();
-            userData.Expires = bufferedReader.readLine();
+            userData.sid = bufferedReader.readLine();
             userData.SESSDATA = bufferedReader.readLine();
-            userData.bili_jct = bufferedReader.readLine();
         } catch (IOException e) {
             return null;
         }
@@ -216,35 +237,24 @@ public class ToolClass {
         }
         return bitmap;
     }
-    public boolean testLogin(String SESSDATA) {
-        StringBuilder document = new StringBuilder();
-        try {
-            URL url = new URL("https://api.bilibili.com/x/web-interface/nav");
-            HttpURLConnection connection = (HttpURLConnection) url
-                    .openConnection();
-            connection.setDoInput(true);
-            connection.setRequestMethod("GET");
-            connection.setUseCaches(false);
-            connection.setRequestProperty("Cookie", "SESSDATA=" + SESSDATA);
-            connection.connect();
-            BufferedReader in = new BufferedReader(new InputStreamReader(connection.getInputStream(),StandardCharsets.UTF_8));
-            String line;
-            while ((line = in.readLine()) != null) {
-                document.append(line);
-            }
-            in.close();
-            JSONObject jsonObject = new JSONObject(document.toString());
-            JSONObject newJsonObject = jsonObject.getJSONObject("data");
-            return newJsonObject.getBoolean("isLogin");
-        } catch (IOException | JSONException e) {
+    public UserInformation getUserInfo(UserData userData){
+        try{
+            UrlReply urlReply = urlGetRequest(userInfo + "?" + getSign("access_key=" + userData.access_token + "&appkey=" + appKey + "&ts=" + getCurrentTimeMillis()));
+            Log.d("getUserInfo", urlReply.json);
+            JSONObject data = (new JSONObject(urlReply.json)).getJSONObject("data");
+            boolean vip = false;
+            if(data.getJSONObject("vip").getInt("status")==1)
+                vip = true;
+            return new UserInformation(data.getString("mid"),data.getString("name"),data.getString("sign"),data.getInt("coins"),data.getString("face"),data.getInt("sex"),data.getInt("level"),vip);
+        } catch (JSONException e) {
             e.printStackTrace();
-            return false;
+            return null;
         }
     }
     public boolean logout(){
-        File file = new File(localFilePath + "userInfo.inf");
-        final boolean delete = file.delete();
-        return true;
+        final boolean delete1 = new File(localFilePath + "sid.inf").delete();
+        final boolean delete2 = new File(localFilePath + "userInfo.inf").delete();
+        return delete1&&delete2;
     }
     /*
     public UserInformation getUserSelfInformation(String SESSDATA){
@@ -450,5 +460,8 @@ public class ToolClass {
         int n1 = cookie.indexOf("=",cookie.indexOf(data));
         int n2 = cookie.indexOf(";",n1);
         return cookie.substring(n1+1,n2);
+    }
+    private long getCurrentTimeMillis(){
+        return System.currentTimeMillis()/1000;
     }
 }

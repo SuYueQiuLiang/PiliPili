@@ -21,6 +21,7 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ProgressBar;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
@@ -46,9 +47,9 @@ import javax.crypto.Cipher;
 
 public class MainActivity extends AppCompatActivity {
     EditText searchBar;
-    boolean wasLogin=false,keepLoginListen=false;
-    UserData userData;
-    UserInformation userInformation;
+    boolean wasLogin=false;
+    UserData userData=null;
+    UserInformation userInformation=null;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -81,33 +82,24 @@ public class MainActivity extends AppCompatActivity {
         getWindow().setStatusBarColor(getColor(R.color.colorAccent));
 
 
-        new Thread(new Runnable() {
-            @Override
-            public void run() {
-                String aa = toolClass.Login("","");
-            }
-        }).start();
-
 
         //尝试从本地读取数据登陆
         userData = toolClass.readUserInfo();
-        /*
+
         if(userData!=null){
             new Thread(new Runnable() {
                 @SuppressLint("UseCompatLoadingForDrawables")
-                @Override
                 public void run() {
-                    wasLogin = toolClass.testLogin(userData.SESSDATA);
-                    if(wasLogin){
-                        userInformation = toolClass.getUserSelfInformation(userData.SESSDATA);
-                        final Bitmap bitmap = toolClass.getUserFaceBitmap(userInformation.face);
-                        runOnUiThread(new Runnable() {
-                            @Override
-                            public void run() {
-                                userHead.setImageBitmap(bitmap);
-                                userName.setText(userInformation.uname);
-                            }
-                        });
+                    userInformation = toolClass.getUserInfo(userData);
+                    if(userInformation != null){
+                    final Bitmap bitmap = toolClass.getUserFaceBitmap(userInformation.face);
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            userHead.setImageBitmap(bitmap);
+                            userName.setText(userInformation.name);
+                        }
+                    });
                     }
                     else {
                         wasLogin = false;
@@ -115,11 +107,12 @@ public class MainActivity extends AppCompatActivity {
                         userInformation = null;
                         userHead.setImageDrawable(getDrawable(R.drawable.test_head));
                         userName.setText(getResources().getText(R.string.login_message));
+                        toolClass.logout();
                     }
                 }
             }).start();
         }
-        */
+
         //监听事件
 
         userHead.setOnClickListener(new View.OnClickListener() {
@@ -132,49 +125,62 @@ public class MainActivity extends AppCompatActivity {
                     final View dialogView = LayoutInflater.from(MainActivity.this)
                             .inflate(R.layout.loging_dialog, null);
                     customizeDialog.setView(dialogView);
-
-                    final ProgressBar loggingProgressBar = dialogView.findViewById(R.id.logging_progressBar);
-                    Button loggingButton = dialogView.findViewById(R.id.logging_button);
-                    final EditText inputUserName = dialogView.findViewById(R.id.input_user_name);
-                    final EditText inputUserPassword = dialogView.findViewById(R.id.input_user_password);
-                    final ImageView qr_core = dialogView.findViewById(R.id.qr_code);
-                    final AlertDialog dialog = customizeDialog.show();
-                    new Thread(new Runnable() {
-                        @Override
-                        public void run() {
-
-                        }
-                    }).start();
+                    AlertDialog alertDialog = customizeDialog.show();
+                    final ProgressBar loggingProgressBar = alertDialog.findViewById(R.id.logging_progressBar);
+                    Button loggingButton = alertDialog.findViewById(R.id.logging_button);
+                    final EditText inputUserName = alertDialog.findViewById(R.id.input_user_name);
+                    final EditText inputUserPassword = alertDialog.findViewById(R.id.input_user_password);
+                    final TextView loginMessage = alertDialog.findViewById(R.id.login_message);
                     loggingButton.setOnClickListener(new View.OnClickListener() {
                         @Override
                         public void onClick(View v) {
                             new Thread(new Runnable() {
                                 @Override
                                 public void run() {
-                                    String userName = inputUserName.getText().toString();
-                                    String userPassword = inputUserPassword.getText().toString();
-                                    runOnUiThread(new Runnable() {
-                                        @Override
-                                        public void run() {
-                                            loggingProgressBar.setVisibility(View.VISIBLE);
-                                            inputUserName.setFocusable(false);
-                                            inputUserPassword.setFocusable(false);
+                                    try{
+                                        String userName = inputUserName.getText().toString();
+                                        String userPassword = inputUserPassword.getText().toString();
+                                        runOnUiThread(new Runnable() {
+                                            @Override
+                                            public void run() {
+                                                loggingProgressBar.setVisibility(View.VISIBLE);
+                                                inputUserName.setFocusable(false);
+                                                inputUserPassword.setFocusable(false);
+                                            }
+                                        });
+                                        String loginInfo = toolClass.login(userName,userPassword);
+                                        final JSONObject jsonObject = new JSONObject(loginInfo);
+                                        if(jsonObject.has("message")){
+                                        final String message = jsonObject.getString("message");
+                                        runOnUiThread(new Runnable() {
+                                            @Override
+                                            public void run() {
+                                                loginMessage.setText(message);
+                                                loggingProgressBar.setVisibility(View.GONE);
+                                                inputUserName.setFocusable(true);
+                                                inputUserPassword.setFocusable(true);
+                                            }
+                                        });
+                                        }else{
+                                            JSONObject data = jsonObject.getJSONObject("data");
+                                            toolClass.saveUserInfo(data);
                                         }
-                                    });
+                                    } catch (JSONException e) {
+                                        e.printStackTrace();
+                                    }
                                 }
                             }).start();
                         }
                     });
-                    customizeDialog.setOnCancelListener(new DialogInterface.OnCancelListener() {
-                        @Override
-                        public void onCancel(DialogInterface dialog) {
-                            keepLoginListen = false;
-                        }
-                    });
-
                 }
                 else {
-                    //打开dialog显示个人信息
+                    AlertDialog.Builder customizeDialog =
+                            new AlertDialog.Builder(MainActivity.this);
+                    final View dialogView = LayoutInflater.from(MainActivity.this)
+                            .inflate(R.layout.loging_dialog, null);
+                    customizeDialog.setView(dialogView);
+                    AlertDialog alertDialog = customizeDialog.show();
+
                 }
             }
         });
