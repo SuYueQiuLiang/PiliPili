@@ -16,5 +16,5 @@
 
     <string name="not_login_message">未登陆</string>
     <string name="login_message">登陆账号</string>
-
+    <string name="vip_name">大会员</string>
 </resources>

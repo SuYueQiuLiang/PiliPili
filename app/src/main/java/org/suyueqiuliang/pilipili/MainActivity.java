@@ -3,11 +3,12 @@ package org.suyueqiuliang.pilipili;
 import android.Manifest;
 import android.annotation.SuppressLint;
 import android.app.AlertDialog;
+import android.app.Dialog;
 import android.content.Context;
-import android.content.DialogInterface;
 import android.content.pm.PackageManager;
 import android.content.res.ColorStateList;
 import android.graphics.Bitmap;
+import android.graphics.Color;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.view.LayoutInflater;
@@ -18,10 +19,8 @@ import android.view.inputmethod.InputMethodManager;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageView;
-import android.widget.LinearLayout;
 import android.widget.ProgressBar;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
@@ -32,24 +31,15 @@ import androidx.navigation.ui.NavigationUI;
 
 import com.google.android.material.navigation.NavigationView;
 
-import org.apache.commons.codec.binary.Base64;
 import org.json.JSONException;
 import org.json.JSONObject;
-
-import java.nio.charset.StandardCharsets;
-import java.security.KeyFactory;
-import java.security.interfaces.RSAPublicKey;
-import java.security.spec.X509EncodedKeySpec;
-
-import javax.crypto.Cipher;
-
 
 
 public class MainActivity extends AppCompatActivity {
     EditText searchBar;
-    boolean wasLogin=false;
-    UserData userData=null;
-    UserInformation userInformation=null;
+    boolean wasLogin = false;
+    UserData userData = null;
+    UserInformation userInformation = null;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -87,34 +77,10 @@ public class MainActivity extends AppCompatActivity {
         userData = toolClass.readUserInfo();
 
         if(userData!=null){
-            new Thread(new Runnable() {
-                @SuppressLint("UseCompatLoadingForDrawables")
-                public void run() {
-                    userInformation = toolClass.getUserInfo(userData);
-                    if(userInformation != null){
-                    final Bitmap bitmap = toolClass.getUserFaceBitmap(userInformation.face);
-                    runOnUiThread(new Runnable() {
-                        @Override
-                        public void run() {
-                            userHead.setImageBitmap(bitmap);
-                            userName.setText(userInformation.name);
-                        }
-                    });
-                    }
-                    else {
-                        wasLogin = false;
-                        userData = null;
-                        userInformation = null;
-                        userHead.setImageDrawable(getDrawable(R.drawable.test_head));
-                        userName.setText(getResources().getText(R.string.login_message));
-                        toolClass.logout();
-                    }
-                }
-            }).start();
+            login(toolClass,userHead,userName);
         }
 
         //监听事件
-
         userHead.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -138,8 +104,8 @@ public class MainActivity extends AppCompatActivity {
                                 @Override
                                 public void run() {
                                     try{
-                                        String userName = inputUserName.getText().toString();
-                                        String userPassword = inputUserPassword.getText().toString();
+                                        String user_name = inputUserName.getText().toString();
+                                        String user_password = inputUserPassword.getText().toString();
                                         runOnUiThread(new Runnable() {
                                             @Override
                                             public void run() {
@@ -148,7 +114,7 @@ public class MainActivity extends AppCompatActivity {
                                                 inputUserPassword.setFocusable(false);
                                             }
                                         });
-                                        String loginInfo = toolClass.login(userName,userPassword);
+                                        String loginInfo = toolClass.login(user_name,user_password);
                                         final JSONObject jsonObject = new JSONObject(loginInfo);
                                         if(jsonObject.has("message")){
                                         final String message = jsonObject.getString("message");
@@ -164,6 +130,8 @@ public class MainActivity extends AppCompatActivity {
                                         }else{
                                             JSONObject data = jsonObject.getJSONObject("data");
                                             toolClass.saveUserInfo(data);
+                                            userData = toolClass.readUserInfo();
+                                            login(toolClass,userHead,userName);
                                         }
                                     } catch (JSONException e) {
                                         e.printStackTrace();
@@ -174,13 +142,20 @@ public class MainActivity extends AppCompatActivity {
                     });
                 }
                 else {
-                    AlertDialog.Builder customizeDialog =
-                            new AlertDialog.Builder(MainActivity.this);
-                    final View dialogView = LayoutInflater.from(MainActivity.this)
-                            .inflate(R.layout.loging_dialog, null);
-                    customizeDialog.setView(dialogView);
-                    AlertDialog alertDialog = customizeDialog.show();
-
+                    new Thread(new Runnable() {
+                        @Override
+                        public void run() {
+                            final Bitmap bitmap = toolClass.getUserFaceBitmap(userInformation.face);
+                            runOnUiThread(new Runnable() {
+                                @Override
+                                public void run() {
+                                    Dialog mDialog = TransparentDialog.createLoadingDialog(MainActivity.this,bitmap,userInformation);
+                                    mDialog.setCancelable(true);
+                                    mDialog.show();
+                                }
+                            });
+                        }
+                    }).start();
                 }
             }
         });
@@ -255,7 +230,34 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-
+    private void login (final ToolClass toolClass, final ImageView userHead, final TextView userName){
+        new Thread(new Runnable() {
+            @SuppressLint("UseCompatLoadingForDrawables")
+            public void run() {
+                userInformation = toolClass.getUserInfo(userData);
+                if(userInformation != null){
+                    wasLogin = true;
+                    final Bitmap bitmap = toolClass.getUserFaceBitmap(userInformation.face);
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            userHead.setImageBitmap(bitmap);
+                            userName.setText(userInformation.name);
+                            //userName.setTextColor(Color.parseColor(userInformation.nickname_color));
+                        }
+                    });
+                }
+                else {
+                    wasLogin = false;
+                    userData = null;
+                    userInformation = null;
+                    userHead.setImageDrawable(getDrawable(R.drawable.test_head));
+                    userName.setText(getResources().getText(R.string.login_message));
+                    toolClass.logout();
+                }
+            }
+        }).start();
+    }
 
 
 

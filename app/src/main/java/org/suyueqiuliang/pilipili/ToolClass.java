@@ -4,10 +4,8 @@ import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Color;
-import android.os.Build;
 import android.util.Log;
 
-import androidx.annotation.RequiresApi;
 
 import com.google.zxing.BarcodeFormat;
 import com.google.zxing.EncodeHintType;
@@ -69,7 +67,7 @@ class LevelInfo{
 }
 
 class UserInformation{
-    public UserInformation(String mid, String name, String sign, int coins, String face, int sex, int level, boolean vip) {
+    public UserInformation(String mid, String name, String sign, int coins, String face, int sex, int level, boolean vip,String nickname_color) {
         this.mid = mid;
         this.name = name;
         this.sign = sign;
@@ -78,9 +76,10 @@ class UserInformation{
         this.sex = sex;
         this.level = level;
         this.vip = vip;
+        this.nickname_color = nickname_color;
     }
     //mid，用户名，签名，头像url，性别
-    String mid,name,sign,face;
+    String mid,name,sign,face,nickname_color;
     //硬币，性别（0保密，1男，2女），等级
     int coins,sex,level;
     boolean vip;
@@ -245,7 +244,7 @@ public class ToolClass {
             boolean vip = false;
             if(data.getJSONObject("vip").getInt("status")==1)
                 vip = true;
-            return new UserInformation(data.getString("mid"),data.getString("name"),data.getString("sign"),data.getInt("coins"),data.getString("face"),data.getInt("sex"),data.getInt("level"),vip);
+            return new UserInformation(data.getString("mid"),data.getString("name"),data.getString("sign"),data.getInt("coins"),data.getString("face"),data.getInt("sex"),data.getInt("level"),vip,data.getJSONObject("vip").getString("nickname_color"));
         } catch (JSONException e) {
             e.printStackTrace();
             return null;
