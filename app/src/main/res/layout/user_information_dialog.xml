@@ -18,7 +18,8 @@
         <ImageView
             android:id="@+id/user_information_dialog_user_head"
             android:layout_width="130dp"
-            android:layout_height="130dp"/>
+            android:layout_height="130dp"
+            android:contentDescription="TODO" />
 
     </androidx.cardview.widget.CardView>
 
@@ -32,7 +33,7 @@
         android:background="@color/white">
 
         <View
-            android:id="@+id/user_information_dialog_view"
+            android:id="@+id/user_information_dialog_view1"
             app:layout_constraintTop_toTopOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
@@ -40,8 +41,19 @@
             android:layout_height="60dp"/>
 
         <TextView
+            android:id="@+id/user_information_dialog_exit"
+            app:layout_constraintTop_toTopOf="@+id/user_information_dialog_view1"
+            app:layout_constraintEnd_toEndOf="@+id/user_information_dialog_view1"
+            android:layout_marginTop="18dp"
+            android:layout_marginEnd="@dimen/activity_horizontal_margin"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/exit"
+            android:textSize="22sp"/>
+
+        <TextView
             android:id="@+id/user_information_dialog_user_name"
-            app:layout_constraintTop_toBottomOf="@+id/user_information_dialog_view"
+            app:layout_constraintTop_toBottomOf="@+id/user_information_dialog_view1"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
             android:layout_marginTop="14dp"
@@ -55,6 +67,7 @@
             app:layout_constraintTop_toBottomOf="@+id/user_information_dialog_user_name"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
+            android:id="@+id/user_information_dialog_vip_card"
             android:layout_marginTop="0dp"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
@@ -65,6 +78,7 @@
                 android:id="@+id/user_information_dialog_vip"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:layout_marginTop="3dp"
                 android:text="@string/vip_name"
                 android:textStyle="bold"
                 android:textSize="20sp"
@@ -75,6 +89,191 @@
 
         </androidx.cardview.widget.CardView>
 
+        <androidx.constraintlayout.widget.ConstraintLayout
+            android:id="@+id/user_information_dialog_level_constraint_layout"
+            app:layout_constraintTop_toBottomOf="@+id/user_information_dialog_vip_card"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            android:layout_marginTop="@dimen/activity_vertical_margin"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content">
+
+            <TextView
+                android:id="@+id/user_information_dialog_level"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                android:layout_marginStart="@dimen/activity_horizontal_margin"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="等级0"
+                android:textSize="22sp"
+                android:textColor="@color/black"/>
+
+            <TextView
+                android:id="@+id/user_information_dialog_exp_text"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintEnd_toEndOf="parent"
+                android:layout_marginEnd="@dimen/activity_horizontal_margin"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="0/0"
+                android:textSize="18sp"/>
+
+        </androidx.constraintlayout.widget.ConstraintLayout>
+
+        <ProgressBar
+            android:id="@+id/user_information_dialog_exp_progress"
+            style="?android:attr/progressBarStyleHorizontal"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="@dimen/activity_horizontal_margin"
+            android:layout_marginTop="6dp"
+            android:layout_marginEnd="@dimen/activity_horizontal_margin"
+            android:max="100"
+            android:progress="50"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/user_information_dialog_level_constraint_layout" />
+
+        <androidx.constraintlayout.widget.ConstraintLayout
+            android:id="@+id/user_information_dialog_coins_constraint_layout"
+            app:layout_constraintTop_toBottomOf="@+id/user_information_dialog_exp_progress"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            android:layout_marginTop="@dimen/activity_vertical_margin"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content">
+
+            <ImageView
+                android:id="@+id/user_information_dialog_coins_image"
+                app:layout_constraintTop_toTopOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                android:layout_marginStart="@dimen/activity_horizontal_margin"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:src="@color/black"/>
+
+            <TextView
+                android:id="@+id/user_information_dialog_coins_text"
+                app:layout_constraintTop_toTopOf="parent"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintStart_toEndOf="@+id/user_information_dialog_coins_image"
+                android:layout_marginStart="10dp"
+                android:gravity="center"
+                android:layout_width="wrap_content"
+                android:layout_height="0dp"
+                android:text="0"
+                android:textSize="22sp"
+                android:textColor="@color/black"/>
+
+            <ImageView
+                android:id="@+id/user_information_dialog_wallet_image"
+                app:layout_constraintTop_toTopOf="parent"
+                app:layout_constraintStart_toEndOf="@id/user_information_dialog_coins_text"
+                android:layout_marginStart="40dp"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:src="@color/black"/>
+
+            <TextView
+                android:id="@+id/user_information_dialog_wallet_text"
+                app:layout_constraintTop_toTopOf="parent"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintStart_toEndOf="@+id/user_information_dialog_wallet_image"
+                android:layout_marginStart="10dp"
+                android:gravity="center"
+                android:layout_width="wrap_content"
+                android:layout_height="0dp"
+                android:text="0"
+                android:textSize="22sp"
+                android:textColor="@color/black"/>
+
+        </androidx.constraintlayout.widget.ConstraintLayout>
+
+        <View
+            android:id="@+id/user_information_dialog_view2"
+            app:layout_constraintTop_toBottomOf="@+id/user_information_dialog_coins_constraint_layout"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            android:layout_marginTop="@dimen/activity_vertical_margin"
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:background="@color/grey"/>
+
+        <LinearLayout
+            app:layout_constraintTop_toBottomOf="@+id/user_information_dialog_view2"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            android:layout_width="0dp"
+            android:layout_height="120dp">
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_weight="1"
+                android:layout_height="match_parent"
+                android:orientation="vertical"
+                android:gravity="center">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textSize="20sp"
+                    android:text="关注"/>
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textSize="34sp"
+                    android:text="44"
+                    android:textStyle="bold"/>
+
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_weight="1"
+                android:layout_height="match_parent"
+                android:orientation="vertical"
+                android:gravity="center">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textSize="20sp"
+                    android:text="粉丝"/>
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textSize="34sp"
+                    android:text="44"
+                    android:textStyle="bold"/>
+
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_weight="1"
+                android:layout_height="match_parent"
+                android:orientation="vertical"
+                android:gravity="center">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textSize="20sp"
+                    android:text="动态"/>
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textSize="34sp"
+                    android:text="44"
+                    android:textStyle="bold"/>
+
+            </LinearLayout>
+
+        </LinearLayout>
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 

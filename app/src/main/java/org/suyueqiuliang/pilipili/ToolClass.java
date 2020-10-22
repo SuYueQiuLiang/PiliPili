@@ -124,7 +124,6 @@ public class ToolClass {
             LoginKey loginKey = new LoginKey(jsonObject.getString("hash"),subStringRSAPublicKey(jsonObject.getString("key")));
             Log.d("RSAPublicKey",loginKey.RSAPublicKey);
             UrlReply urlReply1 = urlPostRequestWithCookie(loginUrl,"sid=" + readSid(),getSign("appkey=" + URLEncoder.encode(appKey,"UTF-8") + "&mobi_app=android&password=" + URLEncoder.encode(encrypt(password, loginKey),"UTF-8")  + "&platform=android&ts=" + URLEncoder.encode(String.valueOf(System.currentTimeMillis()/1000),"UTF-8") + "&username="+URLEncoder.encode(username,"UTF-8")));
-            Log.d("loginReturn",urlReply1.json);
             return urlReply1.json;
         } catch (JSONException | UnsupportedEncodingException e) {
             e.printStackTrace();

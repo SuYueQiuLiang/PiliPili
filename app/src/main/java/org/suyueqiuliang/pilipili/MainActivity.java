@@ -40,7 +40,6 @@ public class MainActivity extends AppCompatActivity {
     boolean wasLogin = false;
     UserData userData = null;
     UserInformation userInformation = null;
-    @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
@@ -73,6 +72,7 @@ public class MainActivity extends AppCompatActivity {
 
 
 
+
         //尝试从本地读取数据登陆
         userData = toolClass.readUserInfo();
 
@@ -91,7 +91,7 @@ public class MainActivity extends AppCompatActivity {
                     final View dialogView = LayoutInflater.from(MainActivity.this)
                             .inflate(R.layout.loging_dialog, null);
                     customizeDialog.setView(dialogView);
-                    AlertDialog alertDialog = customizeDialog.show();
+                    final AlertDialog alertDialog = customizeDialog.show();
                     final ProgressBar loggingProgressBar = alertDialog.findViewById(R.id.logging_progressBar);
                     Button loggingButton = alertDialog.findViewById(R.id.logging_button);
                     final EditText inputUserName = alertDialog.findViewById(R.id.input_user_name);
@@ -132,6 +132,7 @@ public class MainActivity extends AppCompatActivity {
                                             toolClass.saveUserInfo(data);
                                             userData = toolClass.readUserInfo();
                                             login(toolClass,userHead,userName);
+                                            alertDialog.cancel();
                                         }
                                     } catch (JSONException e) {
                                         e.printStackTrace();
@@ -151,6 +152,13 @@ public class MainActivity extends AppCompatActivity {
                                 public void run() {
                                     Dialog mDialog = TransparentDialog.createLoadingDialog(MainActivity.this,bitmap,userInformation);
                                     mDialog.setCancelable(true);
+                                    TextView textView = mDialog.findViewById(R.id.user_information_dialog_exit);
+                                    textView.setOnClickListener(new View.OnClickListener() {
+                                        @Override
+                                        public void onClick(View v) {
+                                            logout(toolClass,userHead,userName);
+                                        }
+                                    });
                                     mDialog.show();
                                 }
                             });
@@ -253,12 +261,23 @@ public class MainActivity extends AppCompatActivity {
                     userInformation = null;
                     userHead.setImageDrawable(getDrawable(R.drawable.test_head));
                     userName.setText(getResources().getText(R.string.login_message));
-                    toolClass.logout();
                 }
             }
         }).start();
     }
 
+    private boolean logout(final ToolClass toolClass, final ImageView userHead, final TextView userName){
+        if(wasLogin){
+            toolClass.logout();
+            userHead.setImageResource(R.drawable.test_head);
+            userName.setText(getString(R.string.not_login_message));
+            wasLogin = false;
+            userData = null;
+            userInformation = null;
+            return true;
+        }
+        else return false;
+    }
 
 
 
