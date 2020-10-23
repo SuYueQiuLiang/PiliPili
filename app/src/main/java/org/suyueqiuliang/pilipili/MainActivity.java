@@ -78,6 +78,31 @@ public class MainActivity extends AppCompatActivity {
 
         if(userData!=null){
             login(toolClass,userHead,userName);
+            new Thread(new Runnable() {
+                @SuppressLint("UseCompatLoadingForDrawables")
+                @Override
+                public void run() {
+                    wasLogin = toolClass.testLogin(userData.SESSDATA);
+                    if(wasLogin){
+                        userInformation = toolClass.getUserSelfInformation(userData.SESSDATA);
+                        final Bitmap bitmap = toolClass.getUserFaceBitmap(userInformation.face);
+                        runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                userHead.setImageBitmap(bitmap);
+                                userName.setText(userInformation.uname);
+                            }
+                        });
+                    }
+                    else {
+                        wasLogin = false;
+                        userData = null;
+                        userInformation = null;
+                        userHead.setImageDrawable(getDrawable(R.drawable.avatar_square_grey));
+                        userName.setText(getResources().getText(R.string.login_message));
+                    }
+                }
+            }).start();
         }
 
         //监听事件
