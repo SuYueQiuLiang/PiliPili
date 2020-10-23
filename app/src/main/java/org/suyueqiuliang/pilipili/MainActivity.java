@@ -3,15 +3,12 @@ package org.suyueqiuliang.pilipili;
 import android.Manifest;
 import android.annotation.SuppressLint;
 import android.app.AlertDialog;
+import android.app.Dialog;
 import android.content.Context;
-import android.content.DialogInterface;
 import android.content.pm.PackageManager;
 import android.content.res.ColorStateList;
-import android.content.res.Resources;
 import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
 import android.graphics.Color;
-import android.media.Image;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.view.LayoutInflater;
@@ -22,7 +19,6 @@ import android.view.inputmethod.InputMethodManager;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageView;
-import android.widget.LinearLayout;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 
@@ -34,50 +30,16 @@ import androidx.navigation.Navigation;
 import androidx.navigation.ui.NavigationUI;
 
 import com.google.android.material.navigation.NavigationView;
-import com.google.zxing.BarcodeFormat;
-import com.google.zxing.EncodeHintType;
-import com.google.zxing.MultiFormatWriter;
-import com.google.zxing.WriterException;
-import com.google.zxing.common.BitMatrix;
 
-import org.apache.commons.codec.binary.Base64;
 import org.json.JSONException;
 import org.json.JSONObject;
-
-import java.io.BufferedReader;
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.OutputStream;
-import java.io.OutputStreamWriter;
-import java.io.UnsupportedEncodingException;
-import java.net.HttpURLConnection;
-import java.net.MalformedURLException;
-import java.net.URL;
-import java.net.URLConnection;
-import java.nio.charset.StandardCharsets;
-import java.security.KeyFactory;
-import java.security.interfaces.RSAPublicKey;
-import java.security.spec.X509EncodedKeySpec;
-import java.util.HashMap;
-import java.util.Map;
-
-import javax.crypto.Cipher;
-
 
 
 public class MainActivity extends AppCompatActivity {
     EditText searchBar;
-    boolean wasLogin=false,keepLoginListen=false;
-    String localFilePath;
-    UserData userData;
-    UserInformation userInformation;
-    @Override
+    boolean wasLogin = false;
+    UserData userData = null;
+    UserInformation userInformation = null;
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
@@ -110,10 +72,12 @@ public class MainActivity extends AppCompatActivity {
 
 
 
+
         //尝试从本地读取数据登陆
         userData = toolClass.readUserInfo();
 
         if(userData!=null){
+            login(toolClass,userHead,userName);
             new Thread(new Runnable() {
                 @SuppressLint("UseCompatLoadingForDrawables")
                 @Override
@@ -142,133 +106,99 @@ public class MainActivity extends AppCompatActivity {
         }
 
         //监听事件
-
         userHead.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 searchBar.clearFocus();
                 if (!wasLogin) {
-                    AlertDialog.Builder customizeDialog =
-                            new AlertDialog.Builder(MainActivity.this);
-                    final View dialogView = LayoutInflater.from(MainActivity.this)
-                            .inflate(R.layout.loging_dialog, null);
-                    customizeDialog.setView(dialogView);
-
-                    final ProgressBar loggingProgressBar = dialogView.findViewById(R.id.logging_progressBar);
-                    Button loggingButton = dialogView.findViewById(R.id.logging_button);
-                    final EditText inputUserName = dialogView.findViewById(R.id.input_user_name);
-                    final EditText inputUserPassword = dialogView.findViewById(R.id.input_user_password);
-                    final ImageView qr_core = dialogView.findViewById(R.id.qr_code);
-                    final AlertDialog dialog = customizeDialog.show();
+                    if(userData!=null){
+                        login(toolClass,userHead,userName);
+                    }
+                    else {
+                        AlertDialog.Builder customizeDialog =
+                                new AlertDialog.Builder(MainActivity.this);
+                        final View dialogView = LayoutInflater.from(MainActivity.this)
+                                .inflate(R.layout.loging_dialog, null);
+                        customizeDialog.setView(dialogView);
+                        final AlertDialog alertDialog = customizeDialog.show();
+                        final ProgressBar loggingProgressBar = alertDialog.findViewById(R.id.logging_progressBar);
+                        Button loggingButton = alertDialog.findViewById(R.id.logging_button);
+                        final EditText inputUserName = alertDialog.findViewById(R.id.input_user_name);
+                        final EditText inputUserPassword = alertDialog.findViewById(R.id.input_user_password);
+                        final TextView loginMessage = alertDialog.findViewById(R.id.login_message);
+                        loggingButton.setOnClickListener(new View.OnClickListener() {
+                            @Override
+                            public void onClick(View v) {
+                                new Thread(new Runnable() {
+                                    @Override
+                                    public void run() {
+                                        try{
+                                            String user_name = inputUserName.getText().toString();
+                                            String user_password = inputUserPassword.getText().toString();
+                                            runOnUiThread(new Runnable() {
+                                                @Override
+                                                public void run() {
+                                                    loggingProgressBar.setVisibility(View.VISIBLE);
+                                                    inputUserName.setFocusable(false);
+                                                    inputUserPassword.setFocusable(false);
+                                                }
+                                            });
+                                            String loginInfo = toolClass.login(user_name,user_password);
+                                            final JSONObject jsonObject = new JSONObject(loginInfo);
+                                            if(jsonObject.has("message")){
+                                                final String message = jsonObject.getString("message");
+                                                runOnUiThread(new Runnable() {
+                                                    @Override
+                                                    public void run() {
+                                                        loginMessage.setText(message);
+                                                        loggingProgressBar.setVisibility(View.GONE);
+                                                        inputUserName.setFocusable(true);
+                                                        inputUserPassword.setFocusable(true);
+                                                    }
+                                                });
+                                            }else{
+                                                JSONObject data = jsonObject.getJSONObject("data");
+                                                toolClass.saveUserInfo(data);
+                                                userData = toolClass.readUserInfo();
+                                                login(toolClass,userHead,userName);
+                                                alertDialog.cancel();
+                                            }
+                                        } catch (JSONException e) {
+                                            e.printStackTrace();
+                                        }
+                                    }
+                                }).start();
+                            }
+                        });
+                    }
+                }
+                else {
                     new Thread(new Runnable() {
                         @Override
                         public void run() {
-                            try {
-                                String apiReturn = getNoContentAPIReturn("https://passport.bilibili.com/qrcode/getLoginUrl");
-                                JSONObject jsonObject = new JSONObject(apiReturn);
-                                JSONObject newJsonObject = jsonObject.getJSONObject("data");
-                                String url = newJsonObject.getString("url");
-                                String oauthKey = newJsonObject.getString("oauthKey");
-                                final Bitmap bitmap = toolClass.makeQrCore(url);
-                                runOnUiThread(new Runnable() {
-                                    @Override
-                                    public void run() {
-                                        qr_core.setImageBitmap(bitmap);
-                                    }
-                                });
-                                System.out.println(oauthKey);
-                                keepLoginListen = true;
-                                JSONObject LoginInfoJsonObject;
-
-                                while (keepLoginListen && !wasLogin) {
-                                    String LoginInfoReturn = toolClass.onLoginListener(oauthKey);
-                                    LoginInfoJsonObject = new JSONObject(LoginInfoReturn);
-                                    wasLogin = LoginInfoJsonObject.getBoolean("status");
-                                    if (wasLogin) {
-                                        toast("已扫描确认!");
-                                        JSONObject userInfoJsonObject = LoginInfoJsonObject.getJSONObject("data");
-                                        String userInfoUrl = userInfoJsonObject.getString("url");
-                                        toolClass.saveUserInfo(userInfoUrl);
-                                        userData = toolClass.readUserInfo();
-                                        assert userData != null;
-                                        userInformation = toolClass.getUserSelfInformation(userData.SESSDATA);
-                                        final Bitmap faceBitmap = toolClass.getUserFaceBitmap(userData.SESSDATA);
-                                        runOnUiThread(new Runnable() {
-                                            @Override
-                                            public void run() {
-                                                userHead.setImageBitmap(faceBitmap);
-                                                userName.setText(userInformation.uname);
-                                            }
-                                        });
-                                        dialog.dismiss();
-                                    }
-                                    Thread.sleep(1000);
-                                }
-
-                            } catch (JSONException | InterruptedException e) {
-                                e.printStackTrace();
-                            }
-                        }
-                    }).start();
-                    loggingButton.setOnClickListener(new View.OnClickListener() {
-                        @Override
-                        public void onClick(View v) {
-                            new Thread(new Runnable() {
+                            final Bitmap bitmap = toolClass.getUserFaceBitmap(userInformation.face);
+                            final LevelWalletInfo levelWalletInfo = toolClass.getUserLevelWalletInfo(userData);
+                            runOnUiThread(new Runnable() {
                                 @Override
                                 public void run() {
-                                    String userName = inputUserName.getText().toString();
-                                    String userPassword = inputUserPassword.getText().toString();
-                                    runOnUiThread(new Runnable() {
+                                    Dialog mDialog = TransparentDialog.createLoadingDialog(MainActivity.this,bitmap,userInformation,levelWalletInfo);
+                                    mDialog.setCancelable(true);
+                                    TextView textView = mDialog.findViewById(R.id.user_information_dialog_exit);
+                                    textView.setOnClickListener(new View.OnClickListener() {
                                         @Override
-                                        public void run() {
-                                            loggingProgressBar.setVisibility(View.VISIBLE);
-                                            inputUserName.setFocusable(false);
-                                            inputUserPassword.setFocusable(false);
+                                        public void onClick(View v) {
+                                            logout(toolClass,userHead,userName);
                                         }
                                     });
-                                    System.out.println("password after encrypt:" + encryption(userPassword));
+                                    mDialog.show();
                                 }
-                            }).start();
+                            });
                         }
-                    });
-                    customizeDialog.setOnCancelListener(new DialogInterface.OnCancelListener() {
-                        @Override
-                        public void onCancel(DialogInterface dialog) {
-                            keepLoginListen = false;
-                        }
-                    });
-
-                }
-                else {
-                    //打开dialog显示个人信息
+                    }).start();
                 }
             }
         });
     }
-
-    //一般无正文api获取返回值
-
-    private String getNoContentAPIReturn(String urlStr){
-        StringBuilder document = new StringBuilder();
-        try {
-            URL url = new URL(urlStr);
-            URLConnection conn = url.openConnection();
-            BufferedReader reader = new BufferedReader(new InputStreamReader(conn.getInputStream(), StandardCharsets.UTF_8));
-            String line;
-            while ((line = reader.readLine()) != null) {
-                document.append(line);
-            }
-            reader.close();
-            System.out.println(document);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        return document.toString();
-    }
-
-    //带正文api获取返回值
-
-
 
     private void requestMyPermissions() {
         if (ContextCompat.checkSelfPermission(this,
@@ -312,7 +242,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private boolean isShouldHideKeyboard(View v, MotionEvent event) {
-        if (v != null && (v instanceof EditText)) {
+        if ((v instanceof EditText)) {
             int[] l = {0, 0};
             v.getLocationInWindow(l);
             int left = l[0],
@@ -339,8 +269,46 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    private void login (final ToolClass toolClass, final ImageView userHead, final TextView userName){
+        new Thread(new Runnable() {
+            @SuppressLint("UseCompatLoadingForDrawables")
+            public void run() {
+                userInformation = toolClass.getUserInfo(userData);
+                if(userInformation != null){
+                    wasLogin = true;
+                    final Bitmap bitmap = toolClass.getUserFaceBitmap(userInformation.face);
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            userHead.setImageBitmap(bitmap);
+                            userName.setText(userInformation.name);
+                            //userName.setTextColor(Color.parseColor(userInformation.nickname_color));
+                        }
+                    });
+                }
+                else if(toolClass.readUserInfo()==null){
+                    wasLogin = false;
+                    userData = null;
+                    userInformation = null;
+                    userHead.setImageDrawable(getDrawable(R.drawable.test_head));
+                    userName.setText(getResources().getText(R.string.login_message));
+                }
+            }
+        }).start();
+    }
 
-
+    private boolean logout(final ToolClass toolClass, final ImageView userHead, final TextView userName){
+        if(wasLogin){
+            toolClass.logout();
+            userHead.setImageResource(R.drawable.test_head);
+            userName.setText(getString(R.string.not_login_message));
+            wasLogin = false;
+            userData = null;
+            userInformation = null;
+            return true;
+        }
+        else return false;
+    }
 
 
 
@@ -353,40 +321,4 @@ public class MainActivity extends AppCompatActivity {
     private void toast(String s){
         System.out.println(s);
     }
-
-    private String encryption(String password){
-        try {
-            String returnString = getNoContentAPIReturn("https://passport.bilibili.com/login?act=getkey");
-            int n1 = 0, n2, i = 3;
-            String hash, publicKey;
-            while (i-- != 0) {
-                n1 = returnString.indexOf('\"', n1 + 1);
-            }
-            n2 = returnString.indexOf('\"', n1 + 1);
-            hash = returnString.substring(n1 + 1, n2);
-            n1 = returnString.indexOf("\":\"",n2);
-            n2 = returnString.indexOf('"',n1+3);
-            publicKey = returnString.substring(n1+31, n2-28);
-            publicKey = publicKey.replace("\\n","");
-            System.out.println("RAS publicKey:" + publicKey);
-            hash += password;
-            return encrypt(hash,publicKey);
-        }catch (Exception e) {
-            e.printStackTrace();
-            return null;
-        }
-    }
-
-
-    public static String encrypt( String str, String publicKey ) throws Exception{
-        //base64编码的公钥
-        byte[] decoded = Base64.decodeBase64(publicKey);
-        RSAPublicKey pubKey = (RSAPublicKey) KeyFactory.getInstance("RSA").generatePublic(new X509EncodedKeySpec(decoded));
-        //RSA加密
-        Cipher cipher = Cipher.getInstance("RSA");
-        cipher.init(Cipher.ENCRYPT_MODE, pubKey);
-        return Base64.encodeBase64String(cipher.doFinal(str.getBytes(StandardCharsets.UTF_8)));
-    }
-
-
 }
