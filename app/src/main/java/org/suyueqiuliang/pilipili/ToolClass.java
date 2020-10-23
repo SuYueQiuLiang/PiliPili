@@ -33,6 +33,7 @@ import java.net.InetAddress;
 import java.net.URL;
 import java.net.URLConnection;
 import java.net.URLEncoder;
+import java.net.UnknownHostException;
 import java.nio.charset.StandardCharsets;
 import java.security.InvalidKeyException;
 import java.security.KeyFactory;
@@ -238,12 +239,17 @@ public class ToolClass {
     public UserInformation getUserInfo(UserData userData){
         try{
             UrlReply urlReply = urlGetRequest(userInfo + "?" + getSign("access_key=" + userData.access_token + "&appkey=" + appKey + "&ts=" + getCurrentTimeMillis()));
-            Log.d("getUserInfo", urlReply.json);
-            JSONObject data = (new JSONObject(urlReply.json)).getJSONObject("data");
-            boolean vip = false;
-            if(data.getJSONObject("vip").getInt("status")==1)
-                vip = true;
-            return new UserInformation(data.getString("mid"),data.getString("name"),data.getString("sign"),data.getInt("coins"),data.getString("face"),data.getInt("sex"),data.getInt("level"),vip,data.getJSONObject("vip").getString("nickname_color"));
+            if(urlReply != null&&new JSONObject(urlReply.json).getInt("code")!=0){
+                logout();
+                return null;
+            }
+            else if(urlReply != null&&new JSONObject(urlReply.json).getInt("code")==0){
+                JSONObject data = (new JSONObject(urlReply.json)).getJSONObject("data");
+                boolean vip = false;
+                if(data.getJSONObject("vip").getInt("status")==1)
+                    vip = true;
+                return new UserInformation(data.getString("mid"),data.getString("name"),data.getString("sign"),data.getInt("coins"),data.getString("face"),data.getInt("sex"),data.getInt("level"),vip,data.getJSONObject("vip").getString("nickname_color"));
+            }else return null;
         } catch (JSONException e) {
             e.printStackTrace();
             return null;
@@ -449,10 +455,6 @@ public class ToolClass {
             e.printStackTrace();
             return null;
         }
-    }
-    private boolean isNetworking() throws IOException {
-        int timeOut = 3000;
-        return InetAddress.getByName("www.bilibili.com").isReachable(timeOut);
     }
     private String getCookie(String cookie,String data){
         int n1 = cookie.indexOf("=",cookie.indexOf(data));

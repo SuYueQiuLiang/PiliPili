@@ -86,61 +86,66 @@ public class MainActivity extends AppCompatActivity {
             public void onClick(View v) {
                 searchBar.clearFocus();
                 if (!wasLogin) {
-                    AlertDialog.Builder customizeDialog =
-                            new AlertDialog.Builder(MainActivity.this);
-                    final View dialogView = LayoutInflater.from(MainActivity.this)
-                            .inflate(R.layout.loging_dialog, null);
-                    customizeDialog.setView(dialogView);
-                    final AlertDialog alertDialog = customizeDialog.show();
-                    final ProgressBar loggingProgressBar = alertDialog.findViewById(R.id.logging_progressBar);
-                    Button loggingButton = alertDialog.findViewById(R.id.logging_button);
-                    final EditText inputUserName = alertDialog.findViewById(R.id.input_user_name);
-                    final EditText inputUserPassword = alertDialog.findViewById(R.id.input_user_password);
-                    final TextView loginMessage = alertDialog.findViewById(R.id.login_message);
-                    loggingButton.setOnClickListener(new View.OnClickListener() {
-                        @Override
-                        public void onClick(View v) {
-                            new Thread(new Runnable() {
-                                @Override
-                                public void run() {
-                                    try{
-                                        String user_name = inputUserName.getText().toString();
-                                        String user_password = inputUserPassword.getText().toString();
-                                        runOnUiThread(new Runnable() {
-                                            @Override
-                                            public void run() {
-                                                loggingProgressBar.setVisibility(View.VISIBLE);
-                                                inputUserName.setFocusable(false);
-                                                inputUserPassword.setFocusable(false);
+                    if(userData!=null){
+                        login(toolClass,userHead,userName);
+                    }
+                    else {
+                        AlertDialog.Builder customizeDialog =
+                                new AlertDialog.Builder(MainActivity.this);
+                        final View dialogView = LayoutInflater.from(MainActivity.this)
+                                .inflate(R.layout.loging_dialog, null);
+                        customizeDialog.setView(dialogView);
+                        final AlertDialog alertDialog = customizeDialog.show();
+                        final ProgressBar loggingProgressBar = alertDialog.findViewById(R.id.logging_progressBar);
+                        Button loggingButton = alertDialog.findViewById(R.id.logging_button);
+                        final EditText inputUserName = alertDialog.findViewById(R.id.input_user_name);
+                        final EditText inputUserPassword = alertDialog.findViewById(R.id.input_user_password);
+                        final TextView loginMessage = alertDialog.findViewById(R.id.login_message);
+                        loggingButton.setOnClickListener(new View.OnClickListener() {
+                            @Override
+                            public void onClick(View v) {
+                                new Thread(new Runnable() {
+                                    @Override
+                                    public void run() {
+                                        try{
+                                            String user_name = inputUserName.getText().toString();
+                                            String user_password = inputUserPassword.getText().toString();
+                                            runOnUiThread(new Runnable() {
+                                                @Override
+                                                public void run() {
+                                                    loggingProgressBar.setVisibility(View.VISIBLE);
+                                                    inputUserName.setFocusable(false);
+                                                    inputUserPassword.setFocusable(false);
+                                                }
+                                            });
+                                            String loginInfo = toolClass.login(user_name,user_password);
+                                            final JSONObject jsonObject = new JSONObject(loginInfo);
+                                            if(jsonObject.has("message")){
+                                                final String message = jsonObject.getString("message");
+                                                runOnUiThread(new Runnable() {
+                                                    @Override
+                                                    public void run() {
+                                                        loginMessage.setText(message);
+                                                        loggingProgressBar.setVisibility(View.GONE);
+                                                        inputUserName.setFocusable(true);
+                                                        inputUserPassword.setFocusable(true);
+                                                    }
+                                                });
+                                            }else{
+                                                JSONObject data = jsonObject.getJSONObject("data");
+                                                toolClass.saveUserInfo(data);
+                                                userData = toolClass.readUserInfo();
+                                                login(toolClass,userHead,userName);
+                                                alertDialog.cancel();
                                             }
-                                        });
-                                        String loginInfo = toolClass.login(user_name,user_password);
-                                        final JSONObject jsonObject = new JSONObject(loginInfo);
-                                        if(jsonObject.has("message")){
-                                        final String message = jsonObject.getString("message");
-                                        runOnUiThread(new Runnable() {
-                                            @Override
-                                            public void run() {
-                                                loginMessage.setText(message);
-                                                loggingProgressBar.setVisibility(View.GONE);
-                                                inputUserName.setFocusable(true);
-                                                inputUserPassword.setFocusable(true);
-                                            }
-                                        });
-                                        }else{
-                                            JSONObject data = jsonObject.getJSONObject("data");
-                                            toolClass.saveUserInfo(data);
-                                            userData = toolClass.readUserInfo();
-                                            login(toolClass,userHead,userName);
-                                            alertDialog.cancel();
+                                        } catch (JSONException e) {
+                                            e.printStackTrace();
                                         }
-                                    } catch (JSONException e) {
-                                        e.printStackTrace();
                                     }
-                                }
-                            }).start();
-                        }
-                    });
+                                }).start();
+                            }
+                        });
+                    }
                 }
                 else {
                     new Thread(new Runnable() {
@@ -255,7 +260,7 @@ public class MainActivity extends AppCompatActivity {
                         }
                     });
                 }
-                else {
+                else if(toolClass.readUserInfo()==null){
                     wasLogin = false;
                     userData = null;
                     userInformation = null;
