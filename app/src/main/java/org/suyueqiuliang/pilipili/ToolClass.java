@@ -56,15 +56,16 @@ class UserData{
     String access_token,refresh_token,expires_in,bili_jct,Expires,DedeUserID,DedeUserID__ckMd5,sid,SESSDATA;
 }
 
-class LevelInfo{
-    public LevelInfo(int current_level, int current_min, int current_exp, int next_exp) {
+class LevelWalletInfo{
+    public LevelWalletInfo(int current_level, int current_min, int current_exp, int next_exp,int wallet) {
         this.current_level = current_level;
         this.current_min = current_min;
         this.current_exp = current_exp;
         this.next_exp = next_exp;
+        this.wallet = wallet;
     }
     //当前等级，当前等级最低经验，当前经验，当前等级最高经验
-    int current_level,current_min,current_exp,next_exp;
+    int current_level,current_min,current_exp,next_exp,wallet;
 }
 
 class UserInformation{
@@ -113,6 +114,7 @@ public class ToolClass {
     private final String getKeyUrl = passportHead + "/api/oauth2/getKey";
     private final String loginUrl = passportHead + "/api/v3/oauth2/login";
     private final String userInfo = app_head + "/x/v2/account/myinfo";
+    private final String userLevelWallet = api_head + "/x/web-interface/nav";
     public ToolClass(Context context){
         this.localFilePath = context.getExternalFilesDir("res")+"/";
     }
@@ -249,6 +251,21 @@ public class ToolClass {
                 if(data.getJSONObject("vip").getInt("status")==1)
                     vip = true;
                 return new UserInformation(data.getString("mid"),data.getString("name"),data.getString("sign"),data.getInt("coins"),data.getString("face"),data.getInt("sex"),data.getInt("level"),vip,data.getJSONObject("vip").getString("nickname_color"));
+            }else return null;
+        } catch (JSONException e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+    public LevelWalletInfo getUserLevelWalletInfo(UserData userData){
+        try{
+            UrlReply urlReply = urlGetRequestWithCookie(userLevelWallet,"SESSDATA=" + userData.SESSDATA);
+            JSONObject jsonObject = new JSONObject(urlReply.json);
+            if(jsonObject.getInt("code") == 0){
+                JSONObject data = jsonObject.getJSONObject("data");
+                JSONObject levelInfo = data.getJSONObject("level_info");
+                JSONObject wallet = data.getJSONObject("wallet");
+                return new LevelWalletInfo(levelInfo.getInt("current_level"),levelInfo.getInt("current_min"),levelInfo.getInt("current_exp"),levelInfo.getInt("next_exp"),wallet.getInt("bcoin_balance"));
             }else return null;
         } catch (JSONException e) {
             e.printStackTrace();

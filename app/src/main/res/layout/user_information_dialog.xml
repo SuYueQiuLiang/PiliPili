@@ -72,7 +72,8 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:background="@color/colorAccent"
-            app:cardCornerRadius="3dp">
+            app:cardCornerRadius="3dp"
+            android:visibility="gone">
 
             <TextView
                 android:id="@+id/user_information_dialog_vip"
@@ -218,13 +219,13 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:textSize="20sp"
-                    android:text="关注"/>
+                    android:text="@string/subscribe"/>
 
                 <TextView
+                    android:id="@+id/user_information_dialog_coins_constraint_layout_subscribe"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:textSize="34sp"
-                    android:text="44"
                     android:textStyle="bold"/>
 
             </LinearLayout>
@@ -240,13 +241,13 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:textSize="20sp"
-                    android:text="粉丝"/>
+                    android:text="@string/fans"/>
 
                 <TextView
+                    android:id="@+id/user_information_dialog_coins_constraint_layout_fans"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:textSize="34sp"
-                    android:text="44"
                     android:textStyle="bold"/>
 
             </LinearLayout>
@@ -262,13 +263,13 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:textSize="20sp"
-                    android:text="动态"/>
+                    android:text="@string/trends"/>
 
                 <TextView
+                    android:id="@+id/user_information_dialog_coins_constraint_layout_trends"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:textSize="34sp"
-                    android:text="44"
                     android:textStyle="bold"/>
 
             </LinearLayout>

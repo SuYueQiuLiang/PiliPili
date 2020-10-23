@@ -152,10 +152,11 @@ public class MainActivity extends AppCompatActivity {
                         @Override
                         public void run() {
                             final Bitmap bitmap = toolClass.getUserFaceBitmap(userInformation.face);
+                            final LevelWalletInfo levelWalletInfo = toolClass.getUserLevelWalletInfo(userData);
                             runOnUiThread(new Runnable() {
                                 @Override
                                 public void run() {
-                                    Dialog mDialog = TransparentDialog.createLoadingDialog(MainActivity.this,bitmap,userInformation);
+                                    Dialog mDialog = TransparentDialog.createLoadingDialog(MainActivity.this,bitmap,userInformation,levelWalletInfo);
                                     mDialog.setCancelable(true);
                                     TextView textView = mDialog.findViewById(R.id.user_information_dialog_exit);
                                     textView.setOnClickListener(new View.OnClickListener() {
