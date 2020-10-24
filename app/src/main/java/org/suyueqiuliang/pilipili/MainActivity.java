@@ -156,14 +156,13 @@ public class MainActivity extends AppCompatActivity {
                             runOnUiThread(new Runnable() {
                                 @Override
                                 public void run() {
-                                    final Dialog mDialog = TransparentDialog.createLoadingDialog(MainActivity.this,bitmap,userInformation,levelWalletInfo);
+                                    Dialog mDialog = TransparentDialog.createLoadingDialog(MainActivity.this,bitmap,userInformation,levelWalletInfo);
                                     mDialog.setCancelable(true);
                                     TextView textView = mDialog.findViewById(R.id.user_information_dialog_exit);
                                     textView.setOnClickListener(new View.OnClickListener() {
                                         @Override
                                         public void onClick(View v) {
                                             logout(toolClass,userHead,userName);
-                                            mDialog.cancel();
                                         }
                                     });
                                     mDialog.show();
@@ -266,8 +265,8 @@ public class MainActivity extends AppCompatActivity {
                     wasLogin = false;
                     userData = null;
                     userInformation = null;
-                    userHead.setImageDrawable(getDrawable(R.drawable.avatar_square_grey));
-                    userName.setText(getResources().getText(R.string.not_login_message));
+                    userHead.setImageDrawable(getDrawable(R.drawable.test_head));
+                    userName.setText(getResources().getText(R.string.login_message));
                 }
             }
         }).start();
@@ -276,7 +275,7 @@ public class MainActivity extends AppCompatActivity {
     private boolean logout(final ToolClass toolClass, final ImageView userHead, final TextView userName){
         if(wasLogin){
             toolClass.logout();
-            userHead.setImageResource(R.drawable.avatar_square_grey);
+            userHead.setImageResource(R.drawable.test_head);
             userName.setText(getString(R.string.not_login_message));
             wasLogin = false;
             userData = null;
