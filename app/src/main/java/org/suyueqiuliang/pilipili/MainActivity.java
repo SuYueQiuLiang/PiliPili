@@ -156,13 +156,14 @@ public class MainActivity extends AppCompatActivity {
                             runOnUiThread(new Runnable() {
                                 @Override
                                 public void run() {
-                                    Dialog mDialog = TransparentDialog.createLoadingDialog(MainActivity.this,bitmap,userInformation,levelWalletInfo);
+                                    final Dialog mDialog = TransparentDialog.createLoadingDialog(MainActivity.this,bitmap,userInformation,levelWalletInfo);
                                     mDialog.setCancelable(true);
                                     TextView textView = mDialog.findViewById(R.id.user_information_dialog_exit);
                                     textView.setOnClickListener(new View.OnClickListener() {
                                         @Override
                                         public void onClick(View v) {
                                             logout(toolClass,userHead,userName);
+                                            mDialog.cancel();
                                         }
                                     });
                                     mDialog.show();
@@ -266,7 +267,7 @@ public class MainActivity extends AppCompatActivity {
                     userData = null;
                     userInformation = null;
                     userHead.setImageDrawable(getDrawable(R.drawable.avatar_square_grey));
-                    userName.setText(getResources().getText(R.string.login_message));
+                    userName.setText(getResources().getText(R.string.not_login_message));
                 }
             }
         }).start();
