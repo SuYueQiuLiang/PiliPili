@@ -265,7 +265,7 @@ public class MainActivity extends AppCompatActivity {
                     wasLogin = false;
                     userData = null;
                     userInformation = null;
-                    userHead.setImageDrawable(getDrawable(R.drawable.test_head));
+                    userHead.setImageDrawable(getDrawable(R.drawable.avatar_square_grey));
                     userName.setText(getResources().getText(R.string.login_message));
                 }
             }
@@ -275,7 +275,7 @@ public class MainActivity extends AppCompatActivity {
     private boolean logout(final ToolClass toolClass, final ImageView userHead, final TextView userName){
         if(wasLogin){
             toolClass.logout();
-            userHead.setImageResource(R.drawable.test_head);
+            userHead.setImageResource(R.drawable.avatar_square_grey);
             userName.setText(getString(R.string.not_login_message));
             wasLogin = false;
             userData = null;
