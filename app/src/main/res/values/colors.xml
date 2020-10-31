@@ -6,6 +6,7 @@
     <color name="rame">#3399ff</color>
     <color name="black">#000000</color>
     <color name="grey">#B1B1B1</color>
+    <color name="lightGrey">#f1f6fa</color>
     <color name="white">#FFFFFF</color>
     <color name="red">#FF0000</color>
     <color name="transparent">#00000000</color>

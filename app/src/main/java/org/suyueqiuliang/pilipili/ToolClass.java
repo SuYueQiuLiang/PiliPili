@@ -4,6 +4,7 @@ import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Color;
+import android.provider.MediaStore;
 import android.util.Log;
 
 
@@ -13,6 +14,7 @@ import com.google.zxing.MultiFormatWriter;
 import com.google.zxing.WriterException;
 import com.google.zxing.common.BitMatrix;
 
+import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -27,13 +29,12 @@ import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.UnsupportedEncodingException;
+import java.lang.reflect.Array;
 import java.math.BigInteger;
 import java.net.HttpURLConnection;
-import java.net.InetAddress;
 import java.net.URL;
 import java.net.URLConnection;
 import java.net.URLEncoder;
-import java.net.UnknownHostException;
 import java.nio.charset.StandardCharsets;
 import java.security.InvalidKeyException;
 import java.security.KeyFactory;
@@ -42,6 +43,7 @@ import java.security.NoSuchAlgorithmException;
 import java.security.interfaces.RSAPublicKey;
 import java.security.spec.InvalidKeySpecException;
 import java.security.spec.X509EncodedKeySpec;
+import java.util.ArrayList;
 import java.util.Base64;
 import java.util.HashMap;
 import java.util.Map;
@@ -115,8 +117,31 @@ public class ToolClass {
     private final String loginUrl = passportHead + "/api/v3/oauth2/login";
     private final String userInfo = app_head + "/x/v2/account/myinfo";
     private final String userLevelWallet = api_head + "/x/web-interface/nav";
+    private final String getBfeId = api_head + "/x/member/v2/notice";
+    private final String getAppRecommendVideo = app_head + "/x/v2/feed/index";
+
     public ToolClass(Context context){
         this.localFilePath = context.getExternalFilesDir("res")+"/";
+    }
+    public ArrayList<video> getAppRecommendVideo(UserData userData){
+        try {
+            UrlReply urlReply = urlGetRequestWithCookie(getAppRecommendVideo + "?" + getSign("access_key=" + userData.access_token +"&appkey=1d8b6e7d45233436&mobi_app=android&network=wifi&platform=android&qn=32&ts=" + getCurrentTimeMillis()),"sid=" + readSid());
+            JSONObject jsonObject = new JSONObject(urlReply.json);
+            jsonObject = jsonObject.getJSONObject("data");
+            JSONArray jsonArray = jsonObject.getJSONArray("items");
+            ArrayList<video> videos = new ArrayList<>();
+            for(int i=0;i<jsonArray.length();i++){
+                if(jsonArray.getJSONObject(i).getString("goto").equals("av")){
+                    JSONObject args = jsonArray.getJSONObject(i).getJSONObject("args");
+                    JSONObject data = jsonArray.getJSONObject(i);
+                    videos.add(new video(data.getString("title"),getUserFaceBitmap(data.getString("cover")),args.getInt("aid"),args.getInt("up_id"),args.getString("up_name"),data.getString("cover_left_text_1"),data.getString("cover_left_text_2"),videoIdType.av));
+                }
+            }
+            return videos;
+        } catch (JSONException e) {
+            e.printStackTrace();
+            return null;
+        }
     }
     public String login(String username, String password){
         try {

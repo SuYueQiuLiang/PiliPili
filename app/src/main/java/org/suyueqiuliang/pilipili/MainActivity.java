@@ -33,6 +33,9 @@ import com.google.android.material.navigation.NavigationView;
 
 import org.json.JSONException;
 import org.json.JSONObject;
+import org.suyueqiuliang.pilipili.ui.home.HomeFragment;
+
+import java.util.ArrayList;
 
 
 public class MainActivity extends AppCompatActivity {
@@ -49,7 +52,6 @@ public class MainActivity extends AppCompatActivity {
 
         //创建一个工具类对象
         final ToolClass toolClass = new ToolClass(MainActivity.this);
-
         //控件变量
         final NavigationView navView = findViewById(R.id.nav_view);
         final View navHead = navView.getHeaderView(0);
@@ -75,10 +77,11 @@ public class MainActivity extends AppCompatActivity {
 
         //尝试从本地读取数据登陆
         userData = toolClass.readUserInfo();
-
         if(userData!=null){
             login(toolClass,userHead,userName);
+            showRecommendVideo(toolClass);
         }
+
 
         //监听事件
         userHead.setOnClickListener(new View.OnClickListener() {
@@ -286,7 +289,22 @@ public class MainActivity extends AppCompatActivity {
         else return false;
     }
 
-
+    private boolean showRecommendVideo(final ToolClass toolClass){
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                final ArrayList<video> videos = toolClass.getAppRecommendVideo(userData);
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        HomeFragment homeFragment = new HomeFragment();
+                        homeFragment.flushRecycler(videos);
+                    }
+                });
+            }
+        }).start();
+        return true;
+    }
 
 
 
