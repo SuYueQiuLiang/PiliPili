@@ -4,6 +4,7 @@ import android.Manifest;
 import android.annotation.SuppressLint;
 import android.app.AlertDialog;
 import android.app.Dialog;
+import android.app.Fragment;
 import android.content.Context;
 import android.content.pm.PackageManager;
 import android.content.res.ColorStateList;
@@ -11,7 +12,9 @@ import android.graphics.Bitmap;
 import android.graphics.Color;
 import android.os.Bundle;
 import android.os.IBinder;
+import android.util.Log;
 import android.view.LayoutInflater;
+import android.view.MenuItem;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.WindowManager;
@@ -22,6 +25,7 @@ import android.widget.ImageView;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
@@ -30,6 +34,8 @@ import androidx.navigation.Navigation;
 import androidx.navigation.ui.NavigationUI;
 
 import com.google.android.material.navigation.NavigationView;
+import com.google.android.material.navigation.NavigationView.OnNavigationItemSelectedListener;
+import com.google.android.material.snackbar.Snackbar;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -42,25 +48,28 @@ public class MainActivity extends AppCompatActivity {
     EditText searchBar;
     boolean wasLogin = false;
     UserData userData = null;
+    ArrayList<video> videos;
     UserInformation userInformation = null;
+    ToolClass toolClass;
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
         //申请权限
+        ArrayList<video> videos = new ArrayList<>();
         requestMyPermissions();
 
         //创建一个工具类对象
-        final ToolClass toolClass = new ToolClass(MainActivity.this);
+        toolClass = new ToolClass(MainActivity.this);
         //控件变量
         final NavigationView navView = findViewById(R.id.nav_view);
         final View navHead = navView.getHeaderView(0);
         final ImageView userHead = navHead.findViewById(R.id.user_head);
+        final ImageView refreshImage = findViewById(R.id.refresh_button);
         final TextView userName = navHead.findViewById(R.id.user_name);
         searchBar = findViewById(R.id.search_bar);
 
         //侧边栏和状态栏初始化
-
         NavController navController = Navigation.findNavController(this, R.id.nav_host_fragment);
         //NavigationUI.setupActionBarWithNavController(this, navController, appBarConfiguration);
         NavigationUI.setupWithNavController(navView, navController);
@@ -79,11 +88,18 @@ public class MainActivity extends AppCompatActivity {
         userData = toolClass.readUserInfo();
         if(userData!=null){
             login(toolClass,userHead,userName);
-            showRecommendVideo(toolClass);
+            showRecommendVideo(true);
         }
+        else showRecommendVideo(false);
 
 
         //监听事件
+        refreshImage.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                showRecommendVideo(wasLogin);
+            }
+        });
         userHead.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -289,11 +305,20 @@ public class MainActivity extends AppCompatActivity {
         else return false;
     }
 
-    private boolean showRecommendVideo(final ToolClass toolClass){
+    public void showRecommendVideo(final boolean hasUserData){
         new Thread(new Runnable() {
             @Override
             public void run() {
-                final ArrayList<video> videos = toolClass.getAppRecommendVideo(userData);
+                ArrayList<video> videos1;
+                if(hasUserData) {
+                    videos1 = toolClass.getAppRecommendVideo(userData);
+                    videos1.addAll(toolClass.getAppRecommendVideo(userData));
+                }
+                else {
+                    videos1 = toolClass.getAppRecommendVideo();
+                    videos1.addAll(toolClass.getAppRecommendVideo());
+                }
+                videos = videos1;
                 runOnUiThread(new Runnable() {
                     @Override
                     public void run() {
@@ -303,14 +328,12 @@ public class MainActivity extends AppCompatActivity {
                 });
             }
         }).start();
-        return true;
     }
 
 
-
-
-
-
+    public ArrayList<video> getRecommendVideo() {
+        return videos;
+    }
 
     private void toast(String s){
         System.out.println(s);

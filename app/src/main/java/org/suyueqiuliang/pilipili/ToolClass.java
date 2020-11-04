@@ -123,6 +123,27 @@ public class ToolClass {
     public ToolClass(Context context){
         this.localFilePath = context.getExternalFilesDir("res")+"/";
     }
+    public ArrayList<video> getAppRecommendVideo(){
+        try {
+            UrlReply urlReply = urlGetRequestWithCookie(getAppRecommendVideo,"sid=" + readSid());
+            JSONObject jsonObject = new JSONObject(urlReply.json);
+            jsonObject = jsonObject.getJSONObject("data");
+            JSONArray jsonArray = jsonObject.getJSONArray("items");
+            ArrayList<video> videos = new ArrayList<>();
+            for(int i=0;i<jsonArray.length();i++){
+                if(jsonArray.getJSONObject(i).getString("goto").equals("av")){
+                    JSONObject args = jsonArray.getJSONObject(i).getJSONObject("args");
+                    JSONObject data = jsonArray.getJSONObject(i);
+                    videos.add(new video(data.getString("title"),getUserFaceBitmap(data.getString("cover")),args.getInt("aid"),args.getInt("up_id"),args.getString("up_name"),data.getString("cover_left_text_1"),data.getString("cover_left_text_2"),videoIdType.av));
+                }
+            }
+            return  videos;
+        } catch (JSONException e) {
+            e.printStackTrace();
+            return null;
+        }
+
+    }
     public ArrayList<video> getAppRecommendVideo(UserData userData){
         try {
             UrlReply urlReply = urlGetRequestWithCookie(getAppRecommendVideo + "?" + getSign("access_key=" + userData.access_token +"&appkey=1d8b6e7d45233436&mobi_app=android&network=wifi&platform=android&qn=32&ts=" + getCurrentTimeMillis()),"sid=" + readSid());
