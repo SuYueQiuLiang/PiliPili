@@ -4,17 +4,13 @@ import android.Manifest;
 import android.annotation.SuppressLint;
 import android.app.AlertDialog;
 import android.app.Dialog;
-import android.app.Fragment;
 import android.content.Context;
 import android.content.pm.PackageManager;
 import android.content.res.ColorStateList;
 import android.graphics.Bitmap;
-import android.graphics.Color;
 import android.os.Bundle;
 import android.os.IBinder;
-import android.util.Log;
 import android.view.LayoutInflater;
-import android.view.MenuItem;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.WindowManager;
@@ -25,7 +21,6 @@ import android.widget.ImageView;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 
-import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
@@ -34,23 +29,23 @@ import androidx.navigation.Navigation;
 import androidx.navigation.ui.NavigationUI;
 
 import com.google.android.material.navigation.NavigationView;
-import com.google.android.material.navigation.NavigationView.OnNavigationItemSelectedListener;
-import com.google.android.material.snackbar.Snackbar;
 
 import org.json.JSONException;
 import org.json.JSONObject;
+import org.suyueqiuliang.pilipili.tool.ToolClass;
+import org.suyueqiuliang.pilipili.tool.UserData;
+import org.suyueqiuliang.pilipili.tool.UserInformation;
+import org.suyueqiuliang.pilipili.tool.loginWithStorageDataReturnInfo;
+import org.suyueqiuliang.pilipili.tool.video;
 import org.suyueqiuliang.pilipili.ui.home.HomeFragment;
 
 import java.util.ArrayList;
 
-
 public class MainActivity extends AppCompatActivity {
     EditText searchBar;
-    boolean wasLogin = false;
-    UserData userData = null;
-    ArrayList<video> videos;
+    static ArrayList<video> videos;
     UserInformation userInformation = null;
-    ToolClass toolClass;
+    static ToolClass toolClass;
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
@@ -85,86 +80,81 @@ public class MainActivity extends AppCompatActivity {
 
 
         //尝试从本地读取数据登陆
-        userData = toolClass.readUserInfo();
-        if(userData!=null){
+        loginWithStorageDataReturnInfo loginWithStorageDataReturnInfo = toolClass.loginWithStorageData();
+        if(loginWithStorageDataReturnInfo.equals(org.suyueqiuliang.pilipili.tool.loginWithStorageDataReturnInfo.ok)){
             login(toolClass,userHead,userName);
-            showRecommendVideo(true);
+            showRecommendVideo();
         }
-        else showRecommendVideo(false);
+        else showRecommendVideo();
 
 
         //监听事件
         refreshImage.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                showRecommendVideo(wasLogin);
+                showRecommendVideo();
             }
         });
         userHead.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 searchBar.clearFocus();
-                if (!wasLogin) {
-                    if(userData!=null){
-                        login(toolClass,userHead,userName);
-                    }
-                    else {
-                        AlertDialog.Builder customizeDialog =
-                                new AlertDialog.Builder(MainActivity.this);
-                        final View dialogView = LayoutInflater.from(MainActivity.this)
-                                .inflate(R.layout.loging_dialog, null);
-                        customizeDialog.setView(dialogView);
-                        final AlertDialog alertDialog = customizeDialog.show();
-                        final ProgressBar loggingProgressBar = alertDialog.findViewById(R.id.logging_progressBar);
-                        Button loggingButton = alertDialog.findViewById(R.id.logging_button);
-                        final EditText inputUserName = alertDialog.findViewById(R.id.input_user_name);
-                        final EditText inputUserPassword = alertDialog.findViewById(R.id.input_user_password);
-                        final TextView loginMessage = alertDialog.findViewById(R.id.login_message);
-                        loggingButton.setOnClickListener(new View.OnClickListener() {
-                            @Override
-                            public void onClick(View v) {
-                                new Thread(new Runnable() {
-                                    @Override
-                                    public void run() {
-                                        try{
-                                            String user_name = inputUserName.getText().toString();
-                                            String user_password = inputUserPassword.getText().toString();
+                if (!toolClass.wasLogin()) {
+                    AlertDialog.Builder customizeDialog =
+                            new AlertDialog.Builder(MainActivity.this);
+                    final View dialogView = LayoutInflater.from(MainActivity.this)
+                            .inflate(R.layout.loging_dialog, null);
+                    customizeDialog.setView(dialogView);
+                    final AlertDialog alertDialog = customizeDialog.show();
+                    final ProgressBar loggingProgressBar = alertDialog.findViewById(R.id.logging_progressBar);
+                    Button loggingButton = alertDialog.findViewById(R.id.logging_button);
+                    final EditText inputUserName = alertDialog.findViewById(R.id.input_user_name);
+                    final EditText inputUserPassword = alertDialog.findViewById(R.id.input_user_password);
+                    final TextView loginMessage = alertDialog.findViewById(R.id.login_message);
+                    loggingButton.setOnClickListener(new View.OnClickListener() {
+                        @Override
+                        public void onClick(View v) {
+                            new Thread(new Runnable() {
+                                @Override
+                                public void run() {
+                                    try{
+                                        String user_name = inputUserName.getText().toString();
+                                        String user_password = inputUserPassword.getText().toString();
+                                        runOnUiThread(new Runnable() {
+                                            @Override
+                                            public void run() {
+                                                loggingProgressBar.setVisibility(View.VISIBLE);
+                                                inputUserName.setFocusable(false);
+                                                inputUserPassword.setFocusable(false);
+                                            }
+                                        });
+                                        String loginInfo = toolClass.login(user_name,user_password);
+                                        final JSONObject jsonObject = new JSONObject(loginInfo);
+                                        if(jsonObject.has("message")){
+                                            final String message = jsonObject.getString("message");
                                             runOnUiThread(new Runnable() {
                                                 @Override
                                                 public void run() {
-                                                    loggingProgressBar.setVisibility(View.VISIBLE);
-                                                    inputUserName.setFocusable(false);
-                                                    inputUserPassword.setFocusable(false);
+                                                    loginMessage.setText(message);
+                                                    loggingProgressBar.setVisibility(View.GONE);
+                                                    inputUserName.setFocusable(true);
+                                                    inputUserPassword.setFocusable(true);
                                                 }
                                             });
-                                            String loginInfo = toolClass.login(user_name,user_password);
-                                            final JSONObject jsonObject = new JSONObject(loginInfo);
-                                            if(jsonObject.has("message")){
-                                                final String message = jsonObject.getString("message");
-                                                runOnUiThread(new Runnable() {
-                                                    @Override
-                                                    public void run() {
-                                                        loginMessage.setText(message);
-                                                        loggingProgressBar.setVisibility(View.GONE);
-                                                        inputUserName.setFocusable(true);
-                                                        inputUserPassword.setFocusable(true);
-                                                    }
-                                                });
-                                            }else{
-                                                JSONObject data = jsonObject.getJSONObject("data");
-                                                toolClass.saveUserInfo(data);
-                                                userData = toolClass.readUserInfo();
-                                                login(toolClass,userHead,userName);
-                                                alertDialog.cancel();
-                                            }
-                                        } catch (JSONException e) {
-                                            e.printStackTrace();
+                                        }else{
+                                            JSONObject data = jsonObject.getJSONObject("data");
+                                            toolClass.saveUserInfo(data);
+                                            userData = toolClass.readUserInfo();
+                                            login(toolClass,userHead,userName);
+                                            alertDialog.cancel();
                                         }
+                                    } catch (JSONException e) {
+                                        e.printStackTrace();
                                     }
-                                }).start();
-                            }
-                        });
-                    }
+                                }
+                            }).start();
+                        }
+                    });
                 }
                 else {
                     new Thread(new Runnable() {
@@ -330,6 +320,29 @@ public class MainActivity extends AppCompatActivity {
         }).start();
     }
 
+    public void addAndShowRecommendVideo(){
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                final ArrayList<video> videos1;
+                if(wasLogin) {
+                    videos1 = toolClass.getAppRecommendVideo(userData);
+                    videos1.addAll(toolClass.getAppRecommendVideo(userData));
+                }
+                else {
+                    videos1 = toolClass.getAppRecommendVideo();
+                    videos1.addAll(toolClass.getAppRecommendVideo());
+                }
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        HomeFragment homeFragment = new HomeFragment();
+                        homeFragment.addRecycler(videos1);
+                    }
+                });
+            }
+        }).start();
+    }
 
     public ArrayList<video> getRecommendVideo() {
         return videos;

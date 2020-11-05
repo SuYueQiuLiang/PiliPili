@@ -12,7 +12,7 @@ import androidx.cardview.widget.CardView;
 import androidx.recyclerview.widget.RecyclerView;
 
 import org.suyueqiuliang.pilipili.R;
-import org.suyueqiuliang.pilipili.video;
+import org.suyueqiuliang.pilipili.tool.video;
 
 import java.util.ArrayList;
 
@@ -23,7 +23,8 @@ public class HomeVideoCardRecyclerViewAdapter extends RecyclerView.Adapter {
         this.arrayList = arrayList;
     }
     public void addNewVideo(ArrayList<video> arrayList){
-
+        this.arrayList.addAll(arrayList);
+        notifyDataSetChanged();
     }
     public void flushAdapter(){
 
@@ -37,7 +38,6 @@ public class HomeVideoCardRecyclerViewAdapter extends RecyclerView.Adapter {
         itemView.setMinimumHeight(height);
         return new VideoViewHolder(itemView);
     }
-
     @Override
     public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int position) {
         ImageView image_title = holder.itemView.findViewById(R.id.image_title);

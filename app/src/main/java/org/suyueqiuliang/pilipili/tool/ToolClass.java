@@ -1,10 +1,10 @@
-package org.suyueqiuliang.pilipili;
+package org.suyueqiuliang.pilipili.tool;
 
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Color;
-import android.provider.MediaStore;
 import android.util.Log;
 
 
@@ -17,6 +17,7 @@ import com.google.zxing.common.BitMatrix;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
+import org.suyueqiuliang.pilipili.R;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
@@ -29,7 +30,6 @@ import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.UnsupportedEncodingException;
-import java.lang.reflect.Array;
 import java.math.BigInteger;
 import java.net.HttpURLConnection;
 import java.net.URL;
@@ -53,58 +53,14 @@ import javax.crypto.Cipher;
 import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.NoSuchPaddingException;
 
-class UserData{
-    //expires_in到期时间
-    String access_token,refresh_token,expires_in,bili_jct,Expires,DedeUserID,DedeUserID__ckMd5,sid,SESSDATA;
-}
 
-class LevelWalletInfo{
-    public LevelWalletInfo(int current_level, int current_min, int current_exp, int next_exp,int wallet) {
-        this.current_level = current_level;
-        this.current_min = current_min;
-        this.current_exp = current_exp;
-        this.next_exp = next_exp;
-        this.wallet = wallet;
-    }
-    //当前等级，当前等级最低经验，当前经验，当前等级最高经验
-    int current_level,current_min,current_exp,next_exp,wallet;
-}
 
-class UserInformation{
-    public UserInformation(String mid, String name, String sign, int coins, String face, int sex, int level, boolean vip,String nickname_color) {
-        this.mid = mid;
-        this.name = name;
-        this.sign = sign;
-        this.coins = coins;
-        this.face = face;
-        this.sex = sex;
-        this.level = level;
-        this.vip = vip;
-        this.nickname_color = nickname_color;
-    }
-    //mid，用户名，签名，头像url，性别
-    String mid,name,sign,face,nickname_color;
-    //硬币，性别（0保密，1男，2女），等级
-    int coins,sex,level;
-    boolean vip;
-}
-
-class LoginKey{
-    String hash,RSAPublicKey;
-    public LoginKey(String hash,String RSAPublicKey){
-        this.hash = hash;
-        this.RSAPublicKey = RSAPublicKey;
-    }
-}
-class UrlReply{
-    public UrlReply(String json, String cookie) {
-        this.json = json;
-        this.cookie = cookie;
-    }
-    String json,cookie;
-}
 public class ToolClass {
-    private final String localFilePath;
+    static private String localFilePath = null;
+    @SuppressLint("StaticFieldLeak")
+    static private Context context = null;
+    static private UserData userData = null;
+    static private boolean wasGetInfo = false;
     private final String appKey = "4409e2ce8ffd12b8";
     private final String appSecKey = "59b43e04ad6965f34319062b478f83dd";
 
@@ -117,15 +73,24 @@ public class ToolClass {
     private final String loginUrl = passportHead + "/api/v3/oauth2/login";
     private final String userInfo = app_head + "/x/v2/account/myinfo";
     private final String userLevelWallet = api_head + "/x/web-interface/nav";
-    private final String getBfeId = api_head + "/x/member/v2/notice";
     private final String getAppRecommendVideo = app_head + "/x/v2/feed/index";
 
     public ToolClass(Context context){
-        this.localFilePath = context.getExternalFilesDir("res")+"/";
+        localFilePath = context.getExternalFilesDir("res")+"/";
+        ToolClass.context = context;
+    }
+    public boolean wasLogin(){
+        return userData!=null;
     }
     public ArrayList<video> getAppRecommendVideo(){
         try {
-            UrlReply urlReply = urlGetRequestWithCookie(getAppRecommendVideo,"sid=" + readSid());
+            if(userData != null && !wasGetInfo)
+                return null;
+            UrlReply urlReply;
+            if(userData != null) urlReply = urlGetRequestWithCookie(getAppRecommendVideo + "?" + getSign("access_key=" + userData.access_token +"&appkey=1d8b6e7d45233436&mobi_app=android&network=wifi&platform=android&qn=32&ts=" + getCurrentTimeMillis()),"sid=" + readSid());
+            else urlReply = urlGetRequestWithCookie(getAppRecommendVideo,"sid=" + readSid());
+            if(urlReply == null)
+                return null;
             JSONObject jsonObject = new JSONObject(urlReply.json);
             jsonObject = jsonObject.getJSONObject("data");
             JSONArray jsonArray = jsonObject.getJSONArray("items");
@@ -134,28 +99,7 @@ public class ToolClass {
                 if(jsonArray.getJSONObject(i).getString("goto").equals("av")){
                     JSONObject args = jsonArray.getJSONObject(i).getJSONObject("args");
                     JSONObject data = jsonArray.getJSONObject(i);
-                    videos.add(new video(data.getString("title"),getUserFaceBitmap(data.getString("cover")),args.getInt("aid"),args.getInt("up_id"),args.getString("up_name"),data.getString("cover_left_text_1"),data.getString("cover_left_text_2"),videoIdType.av));
-                }
-            }
-            return  videos;
-        } catch (JSONException e) {
-            e.printStackTrace();
-            return null;
-        }
-
-    }
-    public ArrayList<video> getAppRecommendVideo(UserData userData){
-        try {
-            UrlReply urlReply = urlGetRequestWithCookie(getAppRecommendVideo + "?" + getSign("access_key=" + userData.access_token +"&appkey=1d8b6e7d45233436&mobi_app=android&network=wifi&platform=android&qn=32&ts=" + getCurrentTimeMillis()),"sid=" + readSid());
-            JSONObject jsonObject = new JSONObject(urlReply.json);
-            jsonObject = jsonObject.getJSONObject("data");
-            JSONArray jsonArray = jsonObject.getJSONArray("items");
-            ArrayList<video> videos = new ArrayList<>();
-            for(int i=0;i<jsonArray.length();i++){
-                if(jsonArray.getJSONObject(i).getString("goto").equals("av")){
-                    JSONObject args = jsonArray.getJSONObject(i).getJSONObject("args");
-                    JSONObject data = jsonArray.getJSONObject(i);
-                    videos.add(new video(data.getString("title"),getUserFaceBitmap(data.getString("cover")),args.getInt("aid"),args.getInt("up_id"),args.getString("up_name"),data.getString("cover_left_text_1"),data.getString("cover_left_text_2"),videoIdType.av));
+                    videos.add(new video(data.getString("title"),data.getString("cover"),args.getInt("aid"),args.getInt("up_id"),args.getString("up_name"),data.getString("cover_left_text_1"),data.getString("cover_left_text_2")));
                 }
             }
             return videos;
@@ -164,38 +108,75 @@ public class ToolClass {
             return null;
         }
     }
+    public loginWithStorageDataReturnInfo loginWithStorageData(){
+        try {
+            UserData userData = readUserData();
+            if(userData == null)
+                return loginWithStorageDataReturnInfo.failed;
+            UrlReply urlReply = urlGetRequest(userInfo + "?" + getSign("access_key=" + userData.access_token + "&appkey=" + appKey + "&ts=" + getCurrentTimeMillis()));
+            if(urlReply ==null)
+                return loginWithStorageDataReturnInfo.notOnline;
+            if(new JSONObject(urlReply.json).getInt("code")!=0){
+                logout();
+                return loginWithStorageDataReturnInfo.failed;
+            }else {
+                ToolClass.userData = userData;
+                return loginWithStorageDataReturnInfo.ok;
+            }
+        } catch (JSONException e) {
+            e.printStackTrace();
+            return loginWithStorageDataReturnInfo.failed;
+        }
+    }
     public String login(String username, String password){
         try {
             UrlReply urlReply = urlPostRequest(getKeyUrl , getSign("appkey=" + appKey));
+            if(urlReply == null)
+                return null;
             saveSid(getCookie(urlReply.cookie,"sid"));
             JSONObject jsonObject = new JSONObject(urlReply.json);
             jsonObject = jsonObject.getJSONObject("data");
             LoginKey loginKey = new LoginKey(jsonObject.getString("hash"),subStringRSAPublicKey(jsonObject.getString("key")));
-            Log.d("RSAPublicKey",loginKey.RSAPublicKey);
-            UrlReply urlReply1 = urlPostRequestWithCookie(loginUrl,"sid=" + readSid(),getSign("appkey=" + URLEncoder.encode(appKey,"UTF-8") + "&mobi_app=android&password=" + URLEncoder.encode(encrypt(password, loginKey),"UTF-8")  + "&platform=android&ts=" + URLEncoder.encode(String.valueOf(System.currentTimeMillis()/1000),"UTF-8") + "&username="+URLEncoder.encode(username,"UTF-8")));
-            return urlReply1.json;
+            urlReply = urlPostRequestWithCookie(loginUrl,"sid=" + readSid(),getSign("appkey=" + URLEncoder.encode(appKey,"UTF-8") + "&mobi_app=android&password=" + URLEncoder.encode(encrypt(password, loginKey),"UTF-8")  + "&platform=android&ts=" + URLEncoder.encode(String.valueOf(System.currentTimeMillis()/1000),"UTF-8") + "&username="+URLEncoder.encode(username,"UTF-8")));
+            if(urlReply == null)
+                return null;
+            jsonObject = new JSONObject(urlReply.json);
+            if(jsonObject.getInt("code") == 0){
+                JSONObject data = jsonObject.getJSONObject("data");
+                saveUserData(data);
+                userData = readUserData();
+                return "true";
+            }
+            else {
+                if(jsonObject.has("message")){
+                    return jsonObject.getString("message");
+                }else return context.getString(R.string.unknown_failed_message);
+            }
         } catch (JSONException | UnsupportedEncodingException e) {
             e.printStackTrace();
-            return null;
+            return e.toString();
         }
     }
-    public String loginWithIdentifyingCode(String username,String password){
+    private String loginWithIdentifyingCode(String username,String password){
         try {
             UrlReply urlReply = urlPostRequest(getKeyUrl , getSign("appkey=" + appKey));
+            if(urlReply == null)
+                return null;
             saveSid(getCookie(urlReply.cookie,"sid"));
             JSONObject jsonObject = new JSONObject(urlReply.json);
             jsonObject = jsonObject.getJSONObject("data");
             LoginKey loginKey = new LoginKey(jsonObject.getString("hash"),subStringRSAPublicKey(jsonObject.getString("key")));
             Log.d("RSAPublicKey",loginKey.RSAPublicKey);
-            UrlReply urlReply1 = urlPostRequestWithCookie(loginUrl,"sid=" + readSid(),getSign("appkey=" + URLEncoder.encode(appKey,"UTF-8") + "&mobi_app=android&password=" + URLEncoder.encode(encrypt(password, loginKey),"UTF-8")  + "&platform=android&ts=" + URLEncoder.encode(String.valueOf(getCurrentTimeMillis()),"UTF-8") + "&username="+URLEncoder.encode(username,"UTF-8")));
-            Log.d("loginReturn",urlReply1.json);
-            return urlReply1.json;
+            urlReply = urlPostRequestWithCookie(loginUrl,"sid=" + readSid(),getSign("appkey=" + URLEncoder.encode(appKey,"UTF-8") + "&mobi_app=android&password=" + URLEncoder.encode(encrypt(password, loginKey),"UTF-8")  + "&platform=android&ts=" + URLEncoder.encode(String.valueOf(getCurrentTimeMillis()),"UTF-8") + "&username="+URLEncoder.encode(username,"UTF-8")));
+            if(urlReply == null)
+                return null;
+            return urlReply.json;
         } catch (JSONException | UnsupportedEncodingException e) {
             e.printStackTrace();
             return null;
         }
     }
-    public boolean saveUserInfo(JSONObject jsonObject) {
+    public void saveUserData(JSONObject jsonObject) {
         try {
             UserData userData = new UserData();
             userData.access_token = jsonObject.getJSONObject("token_info").getString("access_token");
@@ -213,15 +194,13 @@ public class ToolClass {
             OutputStream outputStream = new FileOutputStream(localFilePath + "userInfo.inf");
             outputStream.write(saveData);
             outputStream.close();
-            return true;
         } catch (IOException | JSONException e) {
             e.printStackTrace();
-            return false;
         }
     }
-    public UserData readUserInfo(){
-        UserData userData = new UserData();
+    public UserData readUserData(){
         try {
+            UserData userData = new UserData();
             InputStream inputStream = new FileInputStream(localFilePath + "userInfo.inf");
             BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(inputStream));
             userData.access_token = bufferedReader.readLine();
@@ -233,21 +212,19 @@ public class ToolClass {
             userData.DedeUserID__ckMd5 = bufferedReader.readLine();
             userData.sid = bufferedReader.readLine();
             userData.SESSDATA = bufferedReader.readLine();
+            return userData;
         } catch (IOException e) {
             return null;
         }
-        return userData;
     }
-    private boolean saveSid(String sid){
+    private void saveSid(String sid){
         try {
             byte[] saveData = (sid).getBytes();
             OutputStream outputStream = new FileOutputStream(localFilePath + "sid.inf");
             outputStream.write(saveData);
             outputStream.close();
-            return true;
         } catch (IOException e) {
             e.printStackTrace();
-            return false;
         }
     }
     private String readSid(){
@@ -284,28 +261,34 @@ public class ToolClass {
         }
         return bitmap;
     }
-    public UserInformation getUserInfo(UserData userData){
+    public LoginAccess getUserInfo(){
         try{
             UrlReply urlReply = urlGetRequest(userInfo + "?" + getSign("access_key=" + userData.access_token + "&appkey=" + appKey + "&ts=" + getCurrentTimeMillis()));
-            if(urlReply != null&&new JSONObject(urlReply.json).getInt("code")!=0){
-                logout();
+            if(urlReply == null)
                 return null;
-            }
-            else if(urlReply != null&&new JSONObject(urlReply.json).getInt("code")==0){
+            if(new JSONObject(urlReply.json).getInt("code")==0){
                 JSONObject data = (new JSONObject(urlReply.json)).getJSONObject("data");
                 boolean vip = false;
                 if(data.getJSONObject("vip").getInt("status")==1)
                     vip = true;
-                return new UserInformation(data.getString("mid"),data.getString("name"),data.getString("sign"),data.getInt("coins"),data.getString("face"),data.getInt("sex"),data.getInt("level"),vip,data.getJSONObject("vip").getString("nickname_color"));
-            }else return null;
+                wasGetInfo = true;
+                return new LoginAccess(true,new UserInformation(data.getString("mid"),data.getString("name"),data.getString("sign"),data.getInt("coins"),data.getString("face"),data.getInt("sex"),data.getInt("level"),vip,data.getJSONObject("vip").getString("nickname_color")));
+            }else{
+                logout();
+                return new LoginAccess(false,null);
+            }
         } catch (JSONException e) {
             e.printStackTrace();
             return null;
         }
     }
-    public LevelWalletInfo getUserLevelWalletInfo(UserData userData){
+    public LevelWalletInfo getUserLevelWalletInfo(){
         try{
+            if(!wasGetInfo)
+                return null;
             UrlReply urlReply = urlGetRequestWithCookie(userLevelWallet,"SESSDATA=" + userData.SESSDATA);
+            if(urlReply == null)
+                return null;
             JSONObject jsonObject = new JSONObject(urlReply.json);
             if(jsonObject.getInt("code") == 0){
                 JSONObject data = jsonObject.getJSONObject("data");
@@ -318,10 +301,11 @@ public class ToolClass {
             return null;
         }
     }
-    public boolean logout(){
-        final boolean delete1 = new File(localFilePath + "sid.inf").delete();
-        final boolean delete2 = new File(localFilePath + "userInfo.inf").delete();
-        return delete1&&delete2;
+    public void logout(){
+        new File(localFilePath + "sid.inf").delete();
+        new File(localFilePath + "userInfo.inf").delete();
+        userData = null;
+        wasGetInfo = true;
     }
     /*
     public UserInformation getUserSelfInformation(String SESSDATA){
@@ -363,14 +347,14 @@ public class ToolClass {
         }
     }
     */
-    public Bitmap getUserFaceBitmap(String faceUrl){
+    public Bitmap getUrlImageBitmap(String urlString){
         try {
-            URL url = new URL(faceUrl);
+            URL url = new URL(urlString);
             URLConnection urlConnection = url.openConnection();
             urlConnection.setDoInput(true);
-            urlConnection.setUseCaches(false);//不缓存
+            urlConnection.setUseCaches(false);
             urlConnection.connect();
-            InputStream is = urlConnection.getInputStream();//获得图片的数据流
+            InputStream is = urlConnection.getInputStream();
             Bitmap bmp = BitmapFactory.decodeStream(is);
             is.close();
             return  bmp;
@@ -379,7 +363,7 @@ public class ToolClass {
             return null;
         }
     }
-    public UrlReply urlPostRequest(String urlStr,String postData) {
+    private UrlReply urlPostRequest(String urlStr,String postData) {
         StringBuilder document = new StringBuilder();
         try {
             //链接URL
@@ -408,7 +392,7 @@ public class ToolClass {
             return null;
         }
     }
-    public UrlReply urlPostRequestWithCookie(String urlStr,String Cookie,String postData) {
+    private UrlReply urlPostRequestWithCookie(String urlStr,String Cookie,String postData) {
         StringBuilder document = new StringBuilder();
         try {
             //链接URL
@@ -461,7 +445,7 @@ public class ToolClass {
             return null;
         }
     }
-    public UrlReply urlGetRequest(String urlStr){
+    private UrlReply urlGetRequest(String urlStr){
         StringBuilder document = new StringBuilder();
         try {
             URL url = new URL(urlStr);
@@ -494,8 +478,7 @@ public class ToolClass {
             //RSA加密
             Cipher cipher = Cipher.getInstance("RSA/ECB/PKCS1Padding");
             cipher.init(Cipher.ENCRYPT_MODE, pubKey);
-            String outStr = Base64.getEncoder().encodeToString(cipher.doFinal((loginKey.hash+str).getBytes(StandardCharsets.UTF_8)));
-            return outStr;
+            return Base64.getEncoder().encodeToString(cipher.doFinal((loginKey.hash+str).getBytes(StandardCharsets.UTF_8)));
         }catch (NoSuchAlgorithmException | InvalidKeyException | NoSuchPaddingException | BadPaddingException | InvalidKeySpecException | IllegalBlockSizeException e) {
             e.printStackTrace();
             return null;
