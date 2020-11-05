@@ -11,32 +11,59 @@ import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
-import org.json.JSONException;
-import org.json.JSONObject;
+import org.suyueqiuliang.pilipili.MainActivity;
 import org.suyueqiuliang.pilipili.R;
+import org.suyueqiuliang.pilipili.tool.video;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.net.HttpURLConnection;
-import java.net.URL;
-import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+
 
 public class HomeFragment extends Fragment {
-
-
+    static RecyclerView recyclerView;
+    static HomeVideoCardRecyclerViewAdapter adapter;
+    GridLayoutManager gridLayoutManager;
+    static ArrayList<video> arrayList = new ArrayList<>();
+    static boolean is = true;
     public View onCreateView(@NonNull LayoutInflater inflater,
                              ViewGroup container, Bundle savedInstanceState) {
         View root = inflater.inflate(R.layout.fragment_home, container, false);
-        RecyclerView recyclerView = root.findViewById(R.id.home_fragment_recycler);
-        GridLayoutManager gridLayoutManager = new GridLayoutManager(getContext(),3);
-
+        recyclerView = root.findViewById(R.id.home_fragment_recycler);
+        gridLayoutManager = new GridLayoutManager(getContext(),3);
         recyclerView.setLayoutManager(gridLayoutManager);
-        HomeVideoCardRecyclerViewAdapter adapter = new HomeVideoCardRecyclerViewAdapter(null,null,null,null,null);
-        recyclerView.setAdapter(adapter);
+        if(arrayList.size() != 0) {
+            adapter = new HomeVideoCardRecyclerViewAdapter(arrayList);
+            recyclerView.setAdapter(adapter);
+        }
+        recyclerView.addOnScrollListener(new RecyclerView.OnScrollListener() {
+            @Override
+            public void onScrollStateChanged(@NonNull RecyclerView recyclerView, int newState) {
+                LinearLayoutManager lm = (LinearLayoutManager) recyclerView.getLayoutManager();
+                int totalItemCount = recyclerView.getAdapter().getItemCount();
+                int lastVisibleItemPosition = lm.findLastVisibleItemPosition();
+                int visibleItemCount = recyclerView.getChildCount();
+                if (newState == RecyclerView.SCROLL_STATE_IDLE
+                        && lastVisibleItemPosition == totalItemCount - 1
+                        && visibleItemCount > 0&&is) {
+                    is = false;
+                    //加载更多
+                    MainActivity mainActivity = new MainActivity();
+                    mainActivity.addAndShowRecommendVideo();
+                }
+            }
+        });
         return root;
     }
 
-
+    public void flushRecycler(ArrayList<video> arrayList){
+        //adapter.addNewVideo(arrayList);
+        HomeFragment.arrayList = arrayList;
+        adapter = new HomeVideoCardRecyclerViewAdapter(arrayList);
+        recyclerView.setAdapter(adapter);
+    }
+    public void addRecycler(ArrayList<video> arrayList){
+        //HomeFragment.arrayList.addAll(arrayList);
+        adapter.addNewVideo(arrayList);
+        is = true;
+    }
 }
 
