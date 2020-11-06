@@ -13,8 +13,8 @@ public class UserInformation{
         this.nickname_color = nickname_color;
     }
     //mid，用户名，签名，头像url，性别
-    String mid,name,sign,face,nickname_color;
+    public String mid,name,sign,face,nickname_color;
     //硬币，性别（0保密，1男，2女），等级
-    int coins,sex,level;
-    boolean vip;
+    public int coins,sex,level;
+    public boolean vip;
 }
