@@ -9,5 +9,5 @@ public class LevelWalletInfo{
         this.wallet = wallet;
     }
     //当前等级，当前等级最低经验，当前经验，当前等级最高经验
-    int current_level,current_min,current_exp,next_exp,wallet;
+    public int current_level,current_min,current_exp,next_exp,wallet;
 }

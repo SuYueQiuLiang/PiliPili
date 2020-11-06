@@ -5,7 +5,6 @@ public class LoginAccess{
         this.access = access;
         this.userInformation = userInformation;
     }
-
-    boolean access;
-    UserInformation userInformation;
+    public boolean access;
+    public UserInformation userInformation;
 }

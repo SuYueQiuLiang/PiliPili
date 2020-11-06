@@ -79,6 +79,11 @@ public class ToolClass {
         localFilePath = context.getExternalFilesDir("res")+"/";
         ToolClass.context = context;
     }
+
+    public ToolClass() {
+
+    }
+
     public boolean wasLogin(){
         return userData!=null;
     }
@@ -261,7 +266,7 @@ public class ToolClass {
         }
         return bitmap;
     }
-    public LoginAccess getUserInfo(){
+    public LoginAccess getUserInformation(){
         try{
             UrlReply urlReply = urlGetRequest(userInfo + "?" + getSign("access_key=" + userData.access_token + "&appkey=" + appKey + "&ts=" + getCurrentTimeMillis()));
             if(urlReply == null)

@@ -5,5 +5,5 @@ public class UrlReply{
         this.json = json;
         this.cookie = cookie;
     }
-    String json,cookie;
+    public String json,cookie;
 }

@@ -4,11 +4,8 @@ import android.annotation.SuppressLint;
 import android.app.Dialog;
 import android.content.Context;
 import android.graphics.Bitmap;
-import android.graphics.Color;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
-import android.widget.GridLayout;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ProgressBar;
@@ -17,10 +14,13 @@ import android.widget.TextView;
 import androidx.cardview.widget.CardView;
 import androidx.constraintlayout.widget.ConstraintLayout;
 
+import org.suyueqiuliang.pilipili.tool.LevelWalletInfo;
+import org.suyueqiuliang.pilipili.tool.UserInformation;
+
 
 public class TransparentDialog {
         @SuppressLint("SetTextI18n")
-        public static Dialog createLoadingDialog(Context context,Bitmap user_head,UserInformation userInformation,LevelWalletInfo levelWalletInfo) {
+        public static Dialog createLoadingDialog(Context context, Bitmap user_head, UserInformation userInformation, LevelWalletInfo levelWalletInfo) {
             LayoutInflater inflater = LayoutInflater.from(context);
             View v = inflater.inflate(R.layout.user_information_dialog, null);
             ConstraintLayout layout = v.findViewById(R.id.user_information_dialog_constraintLayout);

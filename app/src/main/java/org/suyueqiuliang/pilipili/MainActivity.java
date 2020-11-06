@@ -8,6 +8,7 @@ import android.content.Context;
 import android.content.pm.PackageManager;
 import android.content.res.ColorStateList;
 import android.graphics.Bitmap;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.view.LayoutInflater;
@@ -20,6 +21,7 @@ import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.ProgressBar;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
@@ -32,6 +34,8 @@ import com.google.android.material.navigation.NavigationView;
 
 import org.json.JSONException;
 import org.json.JSONObject;
+import org.suyueqiuliang.pilipili.tool.LevelWalletInfo;
+import org.suyueqiuliang.pilipili.tool.LoginAccess;
 import org.suyueqiuliang.pilipili.tool.ToolClass;
 import org.suyueqiuliang.pilipili.tool.UserData;
 import org.suyueqiuliang.pilipili.tool.UserInformation;
@@ -44,8 +48,8 @@ import java.util.ArrayList;
 public class MainActivity extends AppCompatActivity {
     EditText searchBar;
     static ArrayList<video> videos;
-    UserInformation userInformation = null;
-    static ToolClass toolClass;
+    ToolClass toolClass;
+    HomeFragment homeFragment;
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
@@ -56,6 +60,7 @@ public class MainActivity extends AppCompatActivity {
 
         //创建一个工具类对象
         toolClass = new ToolClass(MainActivity.this);
+        homeFragment = new HomeFragment();
         //控件变量
         final NavigationView navView = findViewById(R.id.nav_view);
         final View navHead = navView.getHeaderView(0);
@@ -80,19 +85,28 @@ public class MainActivity extends AppCompatActivity {
 
 
         //尝试从本地读取数据登陆
-        loginWithStorageDataReturnInfo loginWithStorageDataReturnInfo = toolClass.loginWithStorageData();
-        if(loginWithStorageDataReturnInfo.equals(org.suyueqiuliang.pilipili.tool.loginWithStorageDataReturnInfo.ok)){
-            login(toolClass,userHead,userName);
-            showRecommendVideo();
-        }
-        else showRecommendVideo();
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                loginWithStorageDataReturnInfo loginWithStorageDataReturnInfo = toolClass.loginWithStorageData();
+                if(loginWithStorageDataReturnInfo.equals(org.suyueqiuliang.pilipili.tool.loginWithStorageDataReturnInfo.ok)){
+                    showUserInformation(toolClass,userHead,userName);
+                }
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+
+                    }
+                });
+            }
+        }).start();
 
 
         //监听事件
         refreshImage.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                showRecommendVideo();
+                homeFragment.flushRecycler();
             }
         });
         userHead.setOnClickListener(new View.OnClickListener() {
@@ -117,39 +131,32 @@ public class MainActivity extends AppCompatActivity {
                             new Thread(new Runnable() {
                                 @Override
                                 public void run() {
-                                    try{
-                                        String user_name = inputUserName.getText().toString();
-                                        String user_password = inputUserPassword.getText().toString();
+                                    String user_name = inputUserName.getText().toString();
+                                    String user_password = inputUserPassword.getText().toString();
+                                    runOnUiThread(new Runnable() {
+                                        @Override
+                                        public void run() {
+                                            loggingProgressBar.setVisibility(View.VISIBLE);
+                                            inputUserName.setFocusable(false);
+                                            inputUserPassword.setFocusable(false);
+                                        }
+                                    });
+                                    final String loginReturn = toolClass.login(user_name,user_password);
+                                    if(loginReturn == null)
+                                        alertDialog.cancel();
+                                    else if(loginReturn.equals("true")){
+
+                                    }
+                                    else{
                                         runOnUiThread(new Runnable() {
                                             @Override
                                             public void run() {
-                                                loggingProgressBar.setVisibility(View.VISIBLE);
-                                                inputUserName.setFocusable(false);
-                                                inputUserPassword.setFocusable(false);
+                                                loginMessage.setText(loginReturn);
+                                                loggingProgressBar.setVisibility(View.GONE);
+                                                inputUserName.setFocusable(true);
+                                                inputUserPassword.setFocusable(true);
                                             }
                                         });
-                                        String loginInfo = toolClass.login(user_name,user_password);
-                                        final JSONObject jsonObject = new JSONObject(loginInfo);
-                                        if(jsonObject.has("message")){
-                                            final String message = jsonObject.getString("message");
-                                            runOnUiThread(new Runnable() {
-                                                @Override
-                                                public void run() {
-                                                    loginMessage.setText(message);
-                                                    loggingProgressBar.setVisibility(View.GONE);
-                                                    inputUserName.setFocusable(true);
-                                                    inputUserPassword.setFocusable(true);
-                                                }
-                                            });
-                                        }else{
-                                            JSONObject data = jsonObject.getJSONObject("data");
-                                            toolClass.saveUserInfo(data);
-                                            userData = toolClass.readUserInfo();
-                                            login(toolClass,userHead,userName);
-                                            alertDialog.cancel();
-                                        }
-                                    } catch (JSONException e) {
-                                        e.printStackTrace();
                                     }
                                 }
                             }).start();
@@ -160,24 +167,27 @@ public class MainActivity extends AppCompatActivity {
                     new Thread(new Runnable() {
                         @Override
                         public void run() {
-                            final Bitmap bitmap = toolClass.getUserFaceBitmap(userInformation.face);
-                            final LevelWalletInfo levelWalletInfo = toolClass.getUserLevelWalletInfo(userData);
-                            runOnUiThread(new Runnable() {
-                                @Override
-                                public void run() {
-                                    final Dialog mDialog = TransparentDialog.createLoadingDialog(MainActivity.this,bitmap,userInformation,levelWalletInfo);
-                                    mDialog.setCancelable(true);
-                                    TextView textView = mDialog.findViewById(R.id.user_information_dialog_exit);
-                                    textView.setOnClickListener(new View.OnClickListener() {
-                                        @Override
-                                        public void onClick(View v) {
-                                            logout(toolClass,userHead,userName);
-                                            mDialog.cancel();
-                                        }
-                                    });
-                                    mDialog.show();
-                                }
-                            });
+                            final LoginAccess loginAccess = toolClass.getUserInformation();
+                            if(loginAccess.access){
+                                final Bitmap bitmap = toolClass.getUrlImageBitmap(loginAccess.userInformation.face);
+                                final LevelWalletInfo levelWalletInfo = toolClass.getUserLevelWalletInfo();
+                                runOnUiThread(new Runnable() {
+                                    @Override
+                                    public void run() {
+                                        final Dialog mDialog = TransparentDialog.createLoadingDialog(MainActivity.this,bitmap,loginAccess.userInformation,levelWalletInfo);
+                                        mDialog.setCancelable(true);
+                                        TextView textView = mDialog.findViewById(R.id.user_information_dialog_exit);
+                                        textView.setOnClickListener(new View.OnClickListener() {
+                                            @Override
+                                            public void onClick(View v) {
+                                                logout(toolClass,userHead,userName);
+                                                mDialog.cancel();
+                                            }
+                                        });
+                                        mDialog.show();
+                                    }
+                                });
+                            }
                         }
                     }).start();
                 }
@@ -254,98 +264,37 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    private void login (final ToolClass toolClass, final ImageView userHead, final TextView userName){
-        new Thread(new Runnable() {
-            @SuppressLint("UseCompatLoadingForDrawables")
-            public void run() {
-                userInformation = toolClass.getUserInfo(userData);
-                if(userInformation != null){
-                    wasLogin = true;
-                    final Bitmap bitmap = toolClass.getUserFaceBitmap(userInformation.face);
-                    runOnUiThread(new Runnable() {
-                        @Override
-                        public void run() {
-                            userHead.setImageBitmap(bitmap);
-                            userName.setText(userInformation.name);
-                            //userName.setTextColor(Color.parseColor(userInformation.nickname_color));
-                        }
-                    });
+    private void showUserInformation (final ToolClass toolClass, final ImageView userHead, final TextView userName){
+        LoginAccess loginAccess = toolClass.getUserInformation();
+        if(loginAccess.access){
+            final UserInformation userInformation = loginAccess.userInformation;
+            final Bitmap faceBitmap = toolClass.getUrlImageBitmap(userInformation.face);
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    userName.setText(userInformation.name);
+                    userHead.setImageBitmap(faceBitmap);
                 }
-                else if(toolClass.readUserInfo()==null){
-                    wasLogin = false;
-                    userData = null;
-                    userInformation = null;
-                    userHead.setImageDrawable(getDrawable(R.drawable.avatar_square_grey));
-                    userName.setText(getResources().getText(R.string.not_login_message));
+            });
+        }
+        else{
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    Toast.makeText(MainActivity.this,getString(R.string.login_success_but_get_information_failed),Toast.LENGTH_LONG).show();
                 }
-            }
-        }).start();
+            });
+        }
     }
 
     private boolean logout(final ToolClass toolClass, final ImageView userHead, final TextView userName){
-        if(wasLogin){
+        if(toolClass.wasLogin()){
             toolClass.logout();
             userHead.setImageResource(R.drawable.avatar_square_grey);
             userName.setText(getString(R.string.not_login_message));
-            wasLogin = false;
-            userData = null;
-            userInformation = null;
             return true;
         }
         else return false;
-    }
-
-    public void showRecommendVideo(final boolean hasUserData){
-        new Thread(new Runnable() {
-            @Override
-            public void run() {
-                ArrayList<video> videos1;
-                if(hasUserData) {
-                    videos1 = toolClass.getAppRecommendVideo(userData);
-                    videos1.addAll(toolClass.getAppRecommendVideo(userData));
-                }
-                else {
-                    videos1 = toolClass.getAppRecommendVideo();
-                    videos1.addAll(toolClass.getAppRecommendVideo());
-                }
-                videos = videos1;
-                runOnUiThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        HomeFragment homeFragment = new HomeFragment();
-                        homeFragment.flushRecycler(videos);
-                    }
-                });
-            }
-        }).start();
-    }
-
-    public void addAndShowRecommendVideo(){
-        new Thread(new Runnable() {
-            @Override
-            public void run() {
-                final ArrayList<video> videos1;
-                if(wasLogin) {
-                    videos1 = toolClass.getAppRecommendVideo(userData);
-                    videos1.addAll(toolClass.getAppRecommendVideo(userData));
-                }
-                else {
-                    videos1 = toolClass.getAppRecommendVideo();
-                    videos1.addAll(toolClass.getAppRecommendVideo());
-                }
-                runOnUiThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        HomeFragment homeFragment = new HomeFragment();
-                        homeFragment.addRecycler(videos1);
-                    }
-                });
-            }
-        }).start();
-    }
-
-    public ArrayList<video> getRecommendVideo() {
-        return videos;
     }
 
     private void toast(String s){
