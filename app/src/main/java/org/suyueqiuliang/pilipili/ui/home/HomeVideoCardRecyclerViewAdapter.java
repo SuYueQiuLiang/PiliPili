@@ -2,6 +2,7 @@ package org.suyueqiuliang.pilipili.ui.home;
 
 import android.annotation.SuppressLint;
 import android.app.Activity;
+import android.content.Intent;
 import android.graphics.Bitmap;
 import android.media.Image;
 import android.net.Uri;
@@ -17,6 +18,7 @@ import androidx.cardview.widget.CardView;
 import androidx.recyclerview.widget.RecyclerView;
 
 import org.suyueqiuliang.pilipili.R;
+import org.suyueqiuliang.pilipili.VideoActivity;
 import org.suyueqiuliang.pilipili.tool.ToolClass;
 import org.suyueqiuliang.pilipili.tool.video;
 
@@ -26,11 +28,15 @@ import java.util.ArrayList;
 public class HomeVideoCardRecyclerViewAdapter extends RecyclerView.Adapter {
 
     ArrayList<video> arrayList;
-    Activity activity;
-    static Bitmap bitmaps[];
+    static Activity activity;
+    static Bitmap[] bitmaps;
     public HomeVideoCardRecyclerViewAdapter(ArrayList<video> arrayList, Activity activity){
         this.arrayList = arrayList;
-        this.activity = activity;
+        HomeVideoCardRecyclerViewAdapter.activity = activity;
+        bitmaps = new Bitmap[arrayList.size()];
+    }
+    public HomeVideoCardRecyclerViewAdapter(ArrayList<video> arrayList){
+        this.arrayList = arrayList;
         bitmaps = new Bitmap[arrayList.size()];
     }
     public void addNewVideo(ArrayList<video> arrayList){
@@ -49,6 +55,7 @@ public class HomeVideoCardRecyclerViewAdapter extends RecyclerView.Adapter {
         itemView.setMinimumHeight(height);
         return new VideoViewHolder(itemView);
     }
+    @SuppressLint("UseCompatLoadingForDrawables")
     @Override
     public void onBindViewHolder(@NonNull final RecyclerView.ViewHolder holder, final int position) {
         final ImageView image_title = holder.itemView.findViewById(R.id.image_title);
@@ -76,6 +83,14 @@ public class HomeVideoCardRecyclerViewAdapter extends RecyclerView.Adapter {
         else image_title.setImageBitmap(bitmaps[position]);
         text_title.setText(video.title);
         text_up_name_time.setText(video.up_name);
+        cardView.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent intent = new Intent(activity, VideoActivity.class);
+                intent.putExtra("av", arrayList.get(position).id);
+                activity.startActivity(intent);
+            }
+        });
     }
 
     @Override

@@ -16,6 +16,7 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.view.WindowManager;
 import android.view.inputmethod.InputMethodManager;
+import android.widget.Adapter;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageView;
@@ -26,6 +27,7 @@ import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
+import androidx.fragment.app.FragmentActivity;
 import androidx.navigation.NavController;
 import androidx.navigation.Navigation;
 import androidx.navigation.ui.NavigationUI;
@@ -42,6 +44,7 @@ import org.suyueqiuliang.pilipili.tool.UserInformation;
 import org.suyueqiuliang.pilipili.tool.loginWithStorageDataReturnInfo;
 import org.suyueqiuliang.pilipili.tool.video;
 import org.suyueqiuliang.pilipili.ui.home.HomeFragment;
+import org.suyueqiuliang.pilipili.ui.home.HomeVideoCardRecyclerViewAdapter;
 
 import java.util.ArrayList;
 
@@ -68,7 +71,6 @@ public class MainActivity extends AppCompatActivity {
         final ImageView refreshImage = findViewById(R.id.refresh_button);
         final TextView userName = navHead.findViewById(R.id.user_name);
         searchBar = findViewById(R.id.search_bar);
-
         //侧边栏和状态栏初始化
         NavController navController = Navigation.findNavController(this, R.id.nav_host_fragment);
         //NavigationUI.setupActionBarWithNavController(this, navController, appBarConfiguration);
@@ -106,7 +108,7 @@ public class MainActivity extends AppCompatActivity {
         refreshImage.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                homeFragment.flushRecycler();
+                HomeFragment.flushRecycler();
             }
         });
         userHead.setOnClickListener(new View.OnClickListener() {
@@ -207,7 +209,6 @@ public class MainActivity extends AppCompatActivity {
             ActivityCompat.requestPermissions(MainActivity.this, new String[]{Manifest.permission.READ_EXTERNAL_STORAGE}, 100);
         }
     }
-
 
 
 

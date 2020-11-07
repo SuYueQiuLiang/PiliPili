@@ -4,9 +4,13 @@ android {
     compileSdkVersion 30
     buildToolsVersion "30.0.2"
 
+    compileOptions {
+        sourceCompatibility 1.8
+        targetCompatibility 1.8
+    }
     defaultConfig {
         applicationId "org.suyueqiuliang.pilipili"
-        minSdkVersion 26
+        minSdkVersion 20
         targetSdkVersion 30
         versionCode 1
         versionName "1.0"
