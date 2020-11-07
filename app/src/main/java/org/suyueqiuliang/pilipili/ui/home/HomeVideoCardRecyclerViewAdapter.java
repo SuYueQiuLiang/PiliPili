@@ -83,13 +83,10 @@ public class HomeVideoCardRecyclerViewAdapter extends RecyclerView.Adapter {
         else image_title.setImageBitmap(bitmaps[position]);
         text_title.setText(video.title);
         text_up_name_time.setText(video.up_name);
-        cardView.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                Intent intent = new Intent(activity, VideoActivity.class);
-                intent.putExtra("av", arrayList.get(position).id);
-                activity.startActivity(intent);
-            }
+        cardView.setOnClickListener(v -> {
+            Intent intent = new Intent(activity, VideoActivity.class);
+            intent.putExtra("av", arrayList.get(position).id);
+            activity.startActivity(intent);
         });
     }
 

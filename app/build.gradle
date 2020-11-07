@@ -1,16 +1,14 @@
 apply plugin: 'com.android.application'
-
 android {
     compileSdkVersion 30
     buildToolsVersion "30.0.2"
-
     compileOptions {
         sourceCompatibility 1.8
         targetCompatibility 1.8
     }
     defaultConfig {
         applicationId "org.suyueqiuliang.pilipili"
-        minSdkVersion 23
+        minSdkVersion 26
         targetSdkVersion 30
         versionCode 1
         versionName "1.0"

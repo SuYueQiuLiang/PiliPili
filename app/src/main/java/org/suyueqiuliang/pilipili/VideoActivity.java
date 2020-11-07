@@ -3,28 +3,36 @@ package org.suyueqiuliang.pilipili;
 import android.content.Intent;
 import android.os.Build;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 
 import androidx.appcompat.app.AppCompatActivity;
 
+import org.suyueqiuliang.pilipili.tool.QualityList;
+import org.suyueqiuliang.pilipili.tool.ToolClass;
+import org.suyueqiuliang.pilipili.tool.VideoInformation;
+
+import java.net.URL;
+
 public class VideoActivity extends AppCompatActivity {
-    static String av;
+    static int av;
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.video_layout);
-        Intent intent = getIntent();
-        av = intent.getStringExtra("av");
         hideSystemNavigationBar();
+        Intent intent = getIntent();
+        av = intent.getIntExtra("av",0);
+        new Thread(() -> {
+            ToolClass toolClass = new ToolClass();
+            VideoInformation videoInformation = toolClass.getVideoInformation(av);
+            QualityList qualityList = toolClass.getVideoStreamuality(av,videoInformation.pages.get(0).cid);
+            Log.d("qualityList",qualityList.qualityList.toString()+"\n"+qualityList.qn.toString());
+        }).start();
     }
     private void hideSystemNavigationBar() {
-        if (Build.VERSION.SDK_INT > 11 && Build.VERSION.SDK_INT < 19) {
-            View view = this.getWindow().getDecorView();
-            view.setSystemUiVisibility(View.GONE);
-        } else if (Build.VERSION.SDK_INT >= 19) {
-            View decorView = getWindow().getDecorView();
-            int uiOptions = View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
-                    | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY | View.SYSTEM_UI_FLAG_FULLSCREEN;
-            decorView.setSystemUiVisibility(uiOptions);
-        }
+        View decorView = getWindow().getDecorView();
+        int uiOptions = View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
+                | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY | View.SYSTEM_UI_FLAG_FULLSCREEN;
+        decorView.setSystemUiVisibility(uiOptions);
     }
 }

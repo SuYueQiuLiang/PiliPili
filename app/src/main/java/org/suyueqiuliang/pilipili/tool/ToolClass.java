@@ -5,6 +5,7 @@ import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Color;
+import android.util.JsonReader;
 import android.util.Log;
 
 
@@ -74,6 +75,8 @@ public class ToolClass {
     private final String userInfo = app_head + "/x/v2/account/myinfo";
     private final String userLevelWallet = api_head + "/x/web-interface/nav";
     private final String getAppRecommendVideo = app_head + "/x/v2/feed/index";
+    private final String getVideoInformation = api_head + "/x/web-interface/view";
+    private final String getVideoStream = api_head + "/x/player/playurl";
 
     public ToolClass(Context context){
         localFilePath = context.getExternalFilesDir("res")+"/";
@@ -82,6 +85,57 @@ public class ToolClass {
 
     public ToolClass() {
 
+    }
+    public QualityList getVideoStreamuality(int aid,int cid){
+        try {
+            if (userData == null || !wasGetInfo)
+                return null;
+            UrlReply urlReply = urlGetRequestWithCookie(getVideoStream + "?avid=" + aid + "&cid=" + cid,"SESSDATA=" + ToolClass.userData.SESSDATA);
+            if(urlReply == null)
+                return null;
+            JSONObject jsonObject = new JSONObject(urlReply.json);
+            jsonObject = jsonObject.getJSONObject("data");
+            ArrayList<String> accept_description = new ArrayList<>();
+            ArrayList<Integer> accept_quality = new ArrayList<>();
+            for(int i =0;i<jsonObject.getJSONArray("accept_description").length();i++){
+                accept_description.add(jsonObject.getJSONArray("accept_description").getString(i));
+                accept_quality.add(jsonObject.getJSONArray("accept_quality").getInt(i));
+            }
+            return new QualityList(accept_description,accept_quality);
+        } catch (JSONException e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+    public VideoInformation getVideoInformation(int aid){
+        try {
+            if (userData != null && !wasGetInfo)
+                return null;
+            else if (userData != null) {
+                UrlReply urlReply = urlGetRequest(getVideoInformation + "?aid=" + aid);
+                if(urlReply == null)
+                    return null;
+                JSONObject jsonObject = new JSONObject(urlReply.json);
+                if(jsonObject.getInt("code") == 0){
+                    jsonObject = jsonObject.getJSONObject("data");
+                    ArrayList<Page> pages = new ArrayList<>();
+                    JSONArray jsonArray = jsonObject.getJSONArray("pages");
+                    for(int i = 0;i <jsonObject.getInt("videos");i++){
+                        Page page = new Page(jsonArray.getJSONObject(i).getInt("cid"),jsonArray.getJSONObject(i).getString("part"));
+                        pages.add(page);
+                    }
+                    JSONObject ownerJsonObject = jsonObject.getJSONObject("owner");
+                    Owner owner = new Owner(ownerJsonObject.getInt("mid"),ownerJsonObject.getString("name"),ownerJsonObject.getString("face"));
+                    return new VideoInformation(jsonObject.getInt("aid"),jsonObject.getString("bvid"),jsonObject.getString("title"),jsonObject.getString("pic"),jsonObject.getString("desc"),owner,pages,jsonObject.getInt("videos"),jsonObject.getInt("duration"),jsonObject.getInt("pubdate"),jsonObject.getInt("ctime"),jsonObject.getInt("tid"),jsonObject.getString("tname"),jsonObject.getInt("copyright"),jsonObject.getInt("state"));
+                }else
+                    return null;
+            } else {
+                return null;
+            }
+        } catch (JSONException e) {
+            e.printStackTrace();
+            return null;
+        }
     }
 
     public boolean wasLogin(){
