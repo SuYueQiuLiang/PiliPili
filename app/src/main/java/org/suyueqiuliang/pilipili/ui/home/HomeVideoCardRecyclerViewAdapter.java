@@ -63,6 +63,7 @@ public class HomeVideoCardRecyclerViewAdapter extends RecyclerView.Adapter {
         final TextView text_title = holder.itemView.findViewById(R.id.text_title);
         final CardView cardView = holder.itemView.findViewById(R.id.home_fragment_recycler_card_view);
         final video video = arrayList.get(position);
+        final TextView text_video_time = holder.itemView.findViewById(R.id.text_video_time);
         image_title.setImageDrawable(activity.getDrawable(R.drawable.recycler_background));
         if(bitmaps[position] == null){
             new Thread(new Runnable() {
@@ -70,17 +71,20 @@ public class HomeVideoCardRecyclerViewAdapter extends RecyclerView.Adapter {
                 public void run() {
                     ToolClass toolClass = new ToolClass();
                     final Bitmap bitmap = toolClass.getUrlImageBitmap(video.title_image);
-                    bitmaps[position] = bitmap;
+                    if(bitmaps.length>position)
+                        bitmaps[position] = bitmap;
                     activity.runOnUiThread(new Runnable() {
                         @Override
                         public void run() {
                             image_title.setImageBitmap(bitmap);
                         }
                     });
+
                 }
             }).start();
         }
         else image_title.setImageBitmap(bitmaps[position]);
+        text_video_time.setText(video.duration);
         text_title.setText(video.title);
         text_up_name_time.setText(video.up_name);
         cardView.setOnClickListener(v -> {

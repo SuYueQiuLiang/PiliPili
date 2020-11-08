@@ -156,9 +156,10 @@ public class ToolClass {
             ArrayList<video> videos = new ArrayList<>();
             for(int i=0;i<jsonArray.length();i++){
                 if(jsonArray.getJSONObject(i).getString("goto").equals("av")){
+                    String duration = jsonArray.getJSONObject(i).getString("cover_right_text");
                     JSONObject args = jsonArray.getJSONObject(i).getJSONObject("args");
                     JSONObject data = jsonArray.getJSONObject(i);
-                    videos.add(new video(data.getString("title"),data.getString("cover"),args.getInt("aid"),args.getInt("up_id"),args.getString("up_name"),data.getString("cover_left_text_1"),data.getString("cover_left_text_2")));
+                    videos.add(new video(data.getString("title"),data.getString("cover"),args.getInt("aid"),args.getInt("up_id"),args.getString("up_name"),data.getString("cover_left_text_1"),data.getString("cover_left_text_2"),duration));
                 }
             }
             return videos;

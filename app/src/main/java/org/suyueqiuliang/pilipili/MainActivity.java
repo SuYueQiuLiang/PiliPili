@@ -72,6 +72,7 @@ public class MainActivity extends AppCompatActivity {
         final TextView userName = navHead.findViewById(R.id.user_name);
         searchBar = findViewById(R.id.search_bar);
         //侧边栏和状态栏初始化
+        //hideSystemNavigationBar();
         NavController navController = Navigation.findNavController(this, R.id.nav_host_fragment);
         //NavigationUI.setupActionBarWithNavController(this, navController, appBarConfiguration);
         NavigationUI.setupWithNavController(navView, navController);
@@ -297,7 +298,12 @@ public class MainActivity extends AppCompatActivity {
         }
         else return false;
     }
-
+    private void hideSystemNavigationBar() {
+        View decorView = getWindow().getDecorView();
+        int uiOptions = View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
+                | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY | View.SYSTEM_UI_FLAG_FULLSCREEN;
+        decorView.setSystemUiVisibility(uiOptions);
+    }
     private void toast(String s){
         System.out.println(s);
     }

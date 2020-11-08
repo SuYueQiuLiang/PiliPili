@@ -26,7 +26,6 @@ public class VideoActivity extends AppCompatActivity {
             ToolClass toolClass = new ToolClass();
             VideoInformation videoInformation = toolClass.getVideoInformation(av);
             QualityList qualityList = toolClass.getVideoStreamuality(av,videoInformation.pages.get(0).cid);
-            Log.d("qualityList",qualityList.qualityList.toString()+"\n"+qualityList.qn.toString());
         }).start();
     }
     private void hideSystemNavigationBar() {
