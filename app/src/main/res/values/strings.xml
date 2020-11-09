@@ -14,10 +14,10 @@
     <string name="title_setting">设置</string>
     <string name="title_about">帮助&amp;关于</string>
 
-    <string name="not_login_message">未登陆</string>
-    <string name="login_message">登陆账号</string>
+    <string name="not_login_message">未登录</string>
+    <string name="login_message">登录账号</string>
     <string name="unknown_failed_message">未知错误</string>
-    <string name="login_success_but_get_information_failed">登陆成功，获取用户信息失败</string>
+    <string name="login_success_but_get_information_failed">登录成功，获取用户信息失败</string>
     <string name="vip_name">大会员</string>
     <string name="exit">退出</string>
     <string name="subscribe">关注</string>

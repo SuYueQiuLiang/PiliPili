@@ -5,6 +5,7 @@ import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Color;
+import android.util.JsonReader;
 import android.util.Log;
 
 
@@ -19,8 +20,10 @@ import org.json.JSONException;
 import org.json.JSONObject;
 import org.suyueqiuliang.pilipili.R;
 
+import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -57,6 +60,7 @@ import javax.crypto.NoSuchPaddingException;
 
 public class ToolClass {
     static private String localFilePath = null;
+    static private String localCachePath = null;
     @SuppressLint("StaticFieldLeak")
     static private Context context = null;
     static private UserData userData = null;
@@ -74,14 +78,68 @@ public class ToolClass {
     private final String userInfo = app_head + "/x/v2/account/myinfo";
     private final String userLevelWallet = api_head + "/x/web-interface/nav";
     private final String getAppRecommendVideo = app_head + "/x/v2/feed/index";
+    private final String getVideoInformation = api_head + "/x/web-interface/view";
+    private final String getVideoStream = api_head + "/x/player/playurl";
 
     public ToolClass(Context context){
-        localFilePath = context.getExternalFilesDir("res")+"/";
         ToolClass.context = context;
+        localFilePath = context.getExternalFilesDir("res")+"/";
+        localCachePath = context.getCacheDir() + "/";
     }
 
     public ToolClass() {
 
+    }
+    public QualityList getVideoStreamQuality(int aid,int cid){
+        try {
+            if (userData == null || !wasGetInfo)
+                return null;
+            UrlReply urlReply = urlGetRequestWithCookie(getVideoStream + "?avid=" + aid + "&cid=" + cid,"SESSDATA=" + ToolClass.userData.SESSDATA);
+            if(urlReply == null)
+                return null;
+            JSONObject jsonObject = new JSONObject(urlReply.json);
+            jsonObject = jsonObject.getJSONObject("data");
+            ArrayList<String> accept_description = new ArrayList<>();
+            ArrayList<Integer> accept_quality = new ArrayList<>();
+            for(int i =0;i<jsonObject.getJSONArray("accept_description").length();i++){
+                accept_description.add(jsonObject.getJSONArray("accept_description").getString(i));
+                accept_quality.add(jsonObject.getJSONArray("accept_quality").getInt(i));
+            }
+            return new QualityList(accept_description,accept_quality);
+        } catch (JSONException e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+    public VideoInformation getVideoInformation(int aid){
+        try {
+            if (userData != null && !wasGetInfo)
+                return null;
+            else if (userData != null) {
+                UrlReply urlReply = urlGetRequest(getVideoInformation + "?aid=" + aid);
+                if(urlReply == null)
+                    return null;
+                JSONObject jsonObject = new JSONObject(urlReply.json);
+                if(jsonObject.getInt("code") == 0){
+                    jsonObject = jsonObject.getJSONObject("data");
+                    ArrayList<Page> pages = new ArrayList<>();
+                    JSONArray jsonArray = jsonObject.getJSONArray("pages");
+                    for(int i = 0;i <jsonObject.getInt("videos");i++){
+                        Page page = new Page(jsonArray.getJSONObject(i).getInt("cid"),jsonArray.getJSONObject(i).getString("part"));
+                        pages.add(page);
+                    }
+                    JSONObject ownerJsonObject = jsonObject.getJSONObject("owner");
+                    Owner owner = new Owner(ownerJsonObject.getInt("mid"),ownerJsonObject.getString("name"),ownerJsonObject.getString("face"));
+                    return new VideoInformation(jsonObject.getInt("aid"),jsonObject.getString("bvid"),jsonObject.getString("title"),jsonObject.getString("pic"),jsonObject.getString("desc"),owner,pages,jsonObject.getInt("videos"),jsonObject.getInt("duration"),jsonObject.getInt("pubdate"),jsonObject.getInt("ctime"),jsonObject.getInt("tid"),jsonObject.getString("tname"),jsonObject.getInt("copyright"),jsonObject.getInt("state"));
+                }else
+                    return null;
+            } else {
+                return null;
+            }
+        } catch (JSONException e) {
+            e.printStackTrace();
+            return null;
+        }
     }
 
     public boolean wasLogin(){
@@ -102,9 +160,10 @@ public class ToolClass {
             ArrayList<video> videos = new ArrayList<>();
             for(int i=0;i<jsonArray.length();i++){
                 if(jsonArray.getJSONObject(i).getString("goto").equals("av")){
+                    String duration = jsonArray.getJSONObject(i).getString("cover_right_text");
                     JSONObject args = jsonArray.getJSONObject(i).getJSONObject("args");
                     JSONObject data = jsonArray.getJSONObject(i);
-                    videos.add(new video(data.getString("title"),data.getString("cover"),args.getInt("aid"),args.getInt("up_id"),args.getString("up_name"),data.getString("cover_left_text_1"),data.getString("cover_left_text_2")));
+                    videos.add(new video(data.getString("title"),data.getString("cover"),args.getInt("aid"),args.getInt("up_id"),args.getString("up_name"),data.getString("cover_left_text_1"),data.getString("cover_left_text_2"),duration));
                 }
             }
             return videos;
@@ -354,15 +413,36 @@ public class ToolClass {
     */
     public Bitmap getUrlImageBitmap(String urlString){
         try {
-            URL url = new URL(urlString);
-            URLConnection urlConnection = url.openConnection();
-            urlConnection.setDoInput(true);
-            urlConnection.setUseCaches(false);
-            urlConnection.connect();
-            InputStream is = urlConnection.getInputStream();
-            Bitmap bmp = BitmapFactory.decodeStream(is);
-            is.close();
-            return  bmp;
+            int position = 0,lastpositon = -1;
+            boolean a =true;
+            while (position != -1){
+                lastpositon = position;
+                position = urlString.indexOf("/",position+1);
+            }
+            File file = new File(localFilePath + urlString.substring(lastpositon+1));
+            if(!file.exists()){
+                file.createNewFile();
+                URL url = new URL(urlString);
+                URLConnection urlConnection = url.openConnection();
+                urlConnection.setDoInput(true);
+                urlConnection.setUseCaches(false);
+                urlConnection.setConnectTimeout(3000);
+                urlConnection.setReadTimeout(3000);
+                urlConnection.connect();
+                InputStream is = urlConnection.getInputStream();
+                Bitmap bmp = BitmapFactory.decodeStream(is);
+                is.close();
+                BufferedOutputStream bos = new BufferedOutputStream(new FileOutputStream(file));
+                bmp.compress(Bitmap.CompressFormat.JPEG, 100, bos);
+                bos.flush();
+                bos.close();
+                return  bmp;
+            }else {
+                FileInputStream is = new FileInputStream(file);
+                Bitmap bmp = BitmapFactory.decodeStream(is);
+                is.close();
+                return bmp;
+            }
         } catch (IOException e) {
             e.printStackTrace();
             return null;
@@ -380,6 +460,8 @@ public class ToolClass {
             connection.setRequestMethod("POST");
             connection.setUseCaches(false); //不使用缓存
             connection.setRequestProperty("Content-Type", "application/x-www-form-urlencoded");
+            connection.setConnectTimeout(3000);
+            connection.setReadTimeout(3000);
             connection.connect();
             BufferedWriter out = new BufferedWriter(new OutputStreamWriter(connection.getOutputStream(),StandardCharsets.UTF_8));
             out.write(postData);
@@ -391,6 +473,7 @@ public class ToolClass {
             }
             out.close();
             in.close();
+            connection.disconnect();
             return new UrlReply(document.toString(),connection.getHeaderField("Set-Cookie"));
         } catch (IOException e) {
             e.printStackTrace();
@@ -410,6 +493,8 @@ public class ToolClass {
             connection.setRequestProperty("Cookie",Cookie);
             connection.setUseCaches(false); //不使用缓存
             connection.setRequestProperty("Content-Type", "application/x-www-form-urlencoded");
+            connection.setConnectTimeout(3000);
+            connection.setReadTimeout(3000);
             connection.connect();
             BufferedWriter out = new BufferedWriter(new OutputStreamWriter(connection.getOutputStream(), StandardCharsets.UTF_8));
             out.write(postData);
@@ -421,6 +506,7 @@ public class ToolClass {
             }
             out.close();
             in.close();
+            connection.disconnect();
             return new UrlReply(document.toString(),connection.getHeaderField("Set-Cookie"));
         } catch (IOException e) {
             e.printStackTrace();
@@ -437,6 +523,8 @@ public class ToolClass {
             connection.setRequestMethod("GET");
             connection.setUseCaches(false);
             connection.setRequestProperty("Cookie",Cookie);
+            connection.setConnectTimeout(3000);
+            connection.setReadTimeout(3000);
             connection.connect();
             BufferedReader in = new BufferedReader(new InputStreamReader(connection.getInputStream(), StandardCharsets.UTF_8));
             String line;
@@ -444,6 +532,7 @@ public class ToolClass {
                 document.append(line);
             }
             in.close();
+            connection.disconnect();
             return new UrlReply(document.toString(),connection.getHeaderField("Set-Cookie"));
         } catch (IOException e) {
             e.printStackTrace();
@@ -459,6 +548,8 @@ public class ToolClass {
             connection.setDoInput(true);
             connection.setRequestMethod("GET");
             connection.setUseCaches(false);
+            connection.setConnectTimeout(3000);
+            connection.setReadTimeout(3000);
             connection.connect();
             BufferedReader in = new BufferedReader(new InputStreamReader(connection.getInputStream(), StandardCharsets.UTF_8));
             String line;
@@ -466,6 +557,7 @@ public class ToolClass {
                 document.append(line);
             }
             in.close();
+            connection.disconnect();
             return new UrlReply(document.toString(),connection.getHeaderField("Set-Cookie"));
         } catch (IOException e) {
             e.printStackTrace();
