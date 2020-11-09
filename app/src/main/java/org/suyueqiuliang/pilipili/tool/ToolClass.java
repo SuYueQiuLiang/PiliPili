@@ -60,6 +60,7 @@ import javax.crypto.NoSuchPaddingException;
 
 public class ToolClass {
     static private String localFilePath = null;
+    static private String localCachePath = null;
     @SuppressLint("StaticFieldLeak")
     static private Context context = null;
     static private UserData userData = null;
@@ -81,8 +82,9 @@ public class ToolClass {
     private final String getVideoStream = api_head + "/x/player/playurl";
 
     public ToolClass(Context context){
-        localFilePath = context.getExternalFilesDir("res")+"/";
         ToolClass.context = context;
+        localFilePath = context.getExternalFilesDir("res")+"/";
+        localCachePath = context.getCacheDir() + "/";
     }
 
     public ToolClass() {
