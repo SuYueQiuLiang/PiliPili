@@ -1,6 +1,7 @@
 package org.suyueqiuliang.pilipili.ui.home;
 
 import android.annotation.SuppressLint;
+import android.app.Activity;
 import android.graphics.Bitmap;
 import android.os.AsyncTask;
 import android.os.Bundle;
@@ -10,14 +11,17 @@ import android.view.ViewGroup;
 
 import androidx.annotation.NonNull;
 import androidx.fragment.app.Fragment;
+import androidx.fragment.app.FragmentActivity;
 import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import org.suyueqiuliang.pilipili.MainActivity;
 import org.suyueqiuliang.pilipili.R;
 import org.suyueqiuliang.pilipili.tool.ToolClass;
 import org.suyueqiuliang.pilipili.tool.video;
 
+import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.Objects;
 
@@ -29,6 +33,7 @@ public class HomeFragment extends Fragment {
     static ArrayList<video> arrayList = new ArrayList<>();
     static boolean is = true;
     static ToolClass toolClass;
+    static Activity activity;
     public View onCreateView(@NonNull LayoutInflater inflater,
                              ViewGroup container, Bundle savedInstanceState) {
         View root = inflater.inflate(R.layout.fragment_home, container, false);
@@ -36,10 +41,8 @@ public class HomeFragment extends Fragment {
         recyclerView = root.findViewById(R.id.home_fragment_recycler);
         gridLayoutManager = new GridLayoutManager(getContext(),3);
         recyclerView.setLayoutManager(gridLayoutManager);
-        recyclerView.getRecycledViewPool().setMaxRecycledViews(0,50);
-        adapter = new HomeVideoCardRecyclerViewAdapter(arrayList,getActivity());
-        flushRecycler();
-
+        activity = getActivity();
+        createAdapter();
         recyclerView.addOnScrollListener(new RecyclerView.OnScrollListener() {
             @Override
             public void onScrollStateChanged(@NonNull RecyclerView recyclerView, int newState) {
@@ -60,15 +63,11 @@ public class HomeFragment extends Fragment {
         });
         return root;
     }
-    public static void setArrayList(ArrayList<video> arrayList){
-        HomeFragment.arrayList = arrayList;
+    public static void createAdapter(){
+        AsyncTask<String, Void, ArrayList<video>> asyncTask = new createAdapter();
+        asyncTask.execute(new String[1]);
     }
-    public static HomeVideoCardRecyclerViewAdapter getAdapter(){
-        return adapter;
-    }
-
-    public static class flushRecycler extends AsyncTask<String, Void, ArrayList<video>> {
-        Bitmap bitmap;
+    private static class createAdapter extends AsyncTask<String, Void, ArrayList<video>> {
         @Override
         protected ArrayList<video> doInBackground(String... voids) {
             return toolClass.getAppRecommendVideo();
@@ -76,25 +75,30 @@ public class HomeFragment extends Fragment {
 
         protected void onPostExecute(ArrayList<video> arrayList) {
             HomeFragment.arrayList = arrayList;
-            adapter = new HomeVideoCardRecyclerViewAdapter(arrayList);
+            adapter = new HomeVideoCardRecyclerViewAdapter(arrayList,activity);
             recyclerView.setAdapter(adapter);
+        }
+    }
+    private static class flushRecycler extends AsyncTask<String, Void, ArrayList<video>> {
+        @Override
+        protected ArrayList<video> doInBackground(String... voids) {
+            return toolClass.getAppRecommendVideo();
+        }
+
+        protected void onPostExecute(ArrayList<video> arrayList) {
+            HomeFragment.arrayList = arrayList;
+            adapter.setVideo(arrayList);
         }
     }
     public static void flushRecycler(){
         AsyncTask<String, Void, ArrayList<video>> asyncTask = new flushRecycler();
         asyncTask.execute(new String[1]);
     }
-    public static void setRecyclerView(ArrayList<video> arrayList){
-        HomeFragment.arrayList = arrayList;
-        adapter = new HomeVideoCardRecyclerViewAdapter(arrayList);
-        recyclerView.setAdapter(adapter);
-    }
     private void addRecycler(){
         AsyncTask<String, Void, ArrayList<video>> asyncTask = new addRecycler();
         asyncTask.execute(new String[1]);
     }
     private static class addRecycler extends AsyncTask<String, Void, ArrayList<video>> {
-        Bitmap bitmap;
         @Override
         protected ArrayList<video> doInBackground(String... voids) {
             return toolClass.getAppRecommendVideo();

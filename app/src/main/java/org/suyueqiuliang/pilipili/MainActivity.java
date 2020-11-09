@@ -14,6 +14,7 @@ import android.os.IBinder;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
+import android.view.ViewGroup;
 import android.view.WindowManager;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.Adapter;
@@ -70,9 +71,13 @@ public class MainActivity extends AppCompatActivity {
         final ImageView userHead = navHead.findViewById(R.id.user_head);
         final ImageView refreshImage = findViewById(R.id.refresh_button);
         final TextView userName = navHead.findViewById(R.id.user_name);
+        final androidx.constraintlayout.widget.ConstraintLayout constraintLayout = findViewById(R.id.container);
         searchBar = findViewById(R.id.search_bar);
         //侧边栏和状态栏初始化
         //hideSystemNavigationBar();
+        ViewGroup.LayoutParams params = navView.getLayoutParams();
+        params.width = getResources().getDisplayMetrics().widthPixels / 5; //屏幕的三分之一
+        navView.setLayoutParams(params);
         NavController navController = Navigation.findNavController(this, R.id.nav_host_fragment);
         //NavigationUI.setupActionBarWithNavController(this, navController, appBarConfiguration);
         NavigationUI.setupWithNavController(navView, navController);

@@ -20,8 +20,10 @@ import org.json.JSONException;
 import org.json.JSONObject;
 import org.suyueqiuliang.pilipili.R;
 
+import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -86,7 +88,7 @@ public class ToolClass {
     public ToolClass() {
 
     }
-    public QualityList getVideoStreamuality(int aid,int cid){
+    public QualityList getVideoStreamQuality(int aid,int cid){
         try {
             if (userData == null || !wasGetInfo)
                 return null;
@@ -409,15 +411,34 @@ public class ToolClass {
     */
     public Bitmap getUrlImageBitmap(String urlString){
         try {
-            URL url = new URL(urlString);
-            URLConnection urlConnection = url.openConnection();
-            urlConnection.setDoInput(true);
-            urlConnection.setUseCaches(false);
-            urlConnection.connect();
-            InputStream is = urlConnection.getInputStream();
-            Bitmap bmp = BitmapFactory.decodeStream(is);
-            is.close();
-            return  bmp;
+            int position = 0,lastpositon = -1;
+            boolean a =true;
+            while (position != -1){
+                lastpositon = position;
+                position = urlString.indexOf("/",position+1);
+            }
+            File file = new File(localFilePath + urlString.substring(lastpositon+1));
+            if(!file.exists()){
+                file.createNewFile();
+                URL url = new URL(urlString);
+                URLConnection urlConnection = url.openConnection();
+                urlConnection.setDoInput(true);
+                urlConnection.setUseCaches(false);
+                urlConnection.connect();
+                InputStream is = urlConnection.getInputStream();
+                Bitmap bmp = BitmapFactory.decodeStream(is);
+                is.close();
+                BufferedOutputStream bos = new BufferedOutputStream(new FileOutputStream(file));
+                bmp.compress(Bitmap.CompressFormat.JPEG, 100, bos);
+                bos.flush();
+                bos.close();
+                return  bmp;
+            }else {
+                FileInputStream is = new FileInputStream(file);
+                Bitmap bmp = BitmapFactory.decodeStream(is);
+                is.close();
+                return bmp;
+            }
         } catch (IOException e) {
             e.printStackTrace();
             return null;
@@ -446,6 +467,7 @@ public class ToolClass {
             }
             out.close();
             in.close();
+            connection.disconnect();
             return new UrlReply(document.toString(),connection.getHeaderField("Set-Cookie"));
         } catch (IOException e) {
             e.printStackTrace();
@@ -476,6 +498,7 @@ public class ToolClass {
             }
             out.close();
             in.close();
+            connection.disconnect();
             return new UrlReply(document.toString(),connection.getHeaderField("Set-Cookie"));
         } catch (IOException e) {
             e.printStackTrace();
@@ -499,6 +522,7 @@ public class ToolClass {
                 document.append(line);
             }
             in.close();
+            connection.disconnect();
             return new UrlReply(document.toString(),connection.getHeaderField("Set-Cookie"));
         } catch (IOException e) {
             e.printStackTrace();
@@ -521,6 +545,7 @@ public class ToolClass {
                 document.append(line);
             }
             in.close();
+            connection.disconnect();
             return new UrlReply(document.toString(),connection.getHeaderField("Set-Cookie"));
         } catch (IOException e) {
             e.printStackTrace();
