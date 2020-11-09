@@ -71,12 +71,11 @@ public class MainActivity extends AppCompatActivity {
         final ImageView userHead = navHead.findViewById(R.id.user_head);
         final ImageView refreshImage = findViewById(R.id.refresh_button);
         final TextView userName = navHead.findViewById(R.id.user_name);
-        final androidx.constraintlayout.widget.ConstraintLayout constraintLayout = findViewById(R.id.container);
         searchBar = findViewById(R.id.search_bar);
         //侧边栏和状态栏初始化
         //hideSystemNavigationBar();
         ViewGroup.LayoutParams params = navView.getLayoutParams();
-        params.width = getResources().getDisplayMetrics().widthPixels / 5; //屏幕的三分之一
+        params.width = getResources().getDisplayMetrics().widthPixels / 5;
         navView.setLayoutParams(params);
         NavController navController = Navigation.findNavController(this, R.id.nav_host_fragment);
         //NavigationUI.setupActionBarWithNavController(this, navController, appBarConfiguration);
@@ -93,112 +92,86 @@ public class MainActivity extends AppCompatActivity {
 
 
         //尝试从本地读取数据登陆
-        new Thread(new Runnable() {
-            @Override
-            public void run() {
-                loginWithStorageDataReturnInfo loginWithStorageDataReturnInfo = toolClass.loginWithStorageData();
-                if(loginWithStorageDataReturnInfo.equals(org.suyueqiuliang.pilipili.tool.loginWithStorageDataReturnInfo.ok)){
-                    showUserInformation(toolClass,userHead,userName);
-                }
-                runOnUiThread(new Runnable() {
-                    @Override
-                    public void run() {
-
-                    }
-                });
+        new Thread(() -> {
+            loginWithStorageDataReturnInfo loginWithStorageDataReturnInfo = toolClass.loginWithStorageData();
+            if(loginWithStorageDataReturnInfo.equals(org.suyueqiuliang.pilipili.tool.loginWithStorageDataReturnInfo.ok)){
+                showUserInformation(toolClass,userHead,userName);
+                runOnUiThread(HomeFragment::flushRecycler);
             }
         }).start();
 
 
         //监听事件
-        refreshImage.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                HomeFragment.flushRecycler();
-            }
-        });
-        userHead.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                searchBar.clearFocus();
-                if (!toolClass.wasLogin()) {
-                    AlertDialog.Builder customizeDialog =
-                            new AlertDialog.Builder(MainActivity.this);
-                    final View dialogView = LayoutInflater.from(MainActivity.this)
-                            .inflate(R.layout.loging_dialog, null);
-                    customizeDialog.setView(dialogView);
-                    final AlertDialog alertDialog = customizeDialog.show();
-                    final ProgressBar loggingProgressBar = alertDialog.findViewById(R.id.logging_progressBar);
-                    Button loggingButton = alertDialog.findViewById(R.id.logging_button);
-                    final EditText inputUserName = alertDialog.findViewById(R.id.input_user_name);
-                    final EditText inputUserPassword = alertDialog.findViewById(R.id.input_user_password);
-                    final TextView loginMessage = alertDialog.findViewById(R.id.login_message);
-                    loggingButton.setOnClickListener(new View.OnClickListener() {
-                        @Override
-                        public void onClick(View v) {
-                            new Thread(new Runnable() {
-                                @Override
-                                public void run() {
-                                    String user_name = inputUserName.getText().toString();
-                                    String user_password = inputUserPassword.getText().toString();
-                                    runOnUiThread(new Runnable() {
-                                        @Override
-                                        public void run() {
-                                            loggingProgressBar.setVisibility(View.VISIBLE);
-                                            inputUserName.setFocusable(false);
-                                            inputUserPassword.setFocusable(false);
-                                        }
-                                    });
-                                    final String loginReturn = toolClass.login(user_name,user_password);
-                                    if(loginReturn == null)
-                                        alertDialog.cancel();
-                                    else if(loginReturn.equals("true")){
-
-                                    }
-                                    else{
-                                        runOnUiThread(new Runnable() {
-                                            @Override
-                                            public void run() {
-                                                loginMessage.setText(loginReturn);
-                                                loggingProgressBar.setVisibility(View.GONE);
-                                                inputUserName.setFocusable(true);
-                                                inputUserPassword.setFocusable(true);
-                                            }
-                                        });
-                                    }
-                                }
-                            }).start();
-                        }
-                    });
-                }
-                else {
-                    new Thread(new Runnable() {
-                        @Override
-                        public void run() {
-                            final LoginAccess loginAccess = toolClass.getUserInformation();
-                            if(loginAccess.access){
-                                final Bitmap bitmap = toolClass.getUrlImageBitmap(loginAccess.userInformation.face);
-                                final LevelWalletInfo levelWalletInfo = toolClass.getUserLevelWalletInfo();
-                                runOnUiThread(new Runnable() {
-                                    @Override
-                                    public void run() {
-                                        final Dialog mDialog = TransparentDialog.createLoadingDialog(MainActivity.this,bitmap,loginAccess.userInformation,levelWalletInfo);
-                                        mDialog.setCancelable(true);
-                                        TextView textView = mDialog.findViewById(R.id.user_information_dialog_exit);
-                                        textView.setOnClickListener(new View.OnClickListener() {
-                                            @Override
-                                            public void onClick(View v) {
-                                                logout(toolClass,userHead,userName);
-                                                mDialog.cancel();
-                                            }
-                                        });
-                                        mDialog.show();
-                                    }
+        refreshImage.setOnClickListener(v -> HomeFragment.flushRecycler());
+        userHead.setOnClickListener(v -> {
+            searchBar.clearFocus();
+            if (!toolClass.wasLogin()) {
+                new Thread(() -> {
+                    loginWithStorageDataReturnInfo loginWithStorageDataReturnInfo = toolClass.loginWithStorageData();
+                    if(loginWithStorageDataReturnInfo.equals(org.suyueqiuliang.pilipili.tool.loginWithStorageDataReturnInfo.ok)) {
+                        showUserInformation(toolClass, userHead, userName);
+                        runOnUiThread(() -> {
+                            HomeFragment.flushRecycler();
+                        });
+                    }else {
+                        runOnUiThread(()->{
+                            AlertDialog.Builder customizeDialog =
+                                    new AlertDialog.Builder(MainActivity.this);
+                            final View dialogView = LayoutInflater.from(MainActivity.this)
+                                    .inflate(R.layout.loging_dialog, null);
+                            customizeDialog.setView(dialogView);
+                            final AlertDialog alertDialog = customizeDialog.show();
+                            final ProgressBar loggingProgressBar = alertDialog.findViewById(R.id.logging_progressBar);
+                            Button loggingButton = alertDialog.findViewById(R.id.logging_button);
+                            final EditText inputUserName = alertDialog.findViewById(R.id.input_user_name);
+                            final EditText inputUserPassword = alertDialog.findViewById(R.id.input_user_password);
+                            final TextView loginMessage = alertDialog.findViewById(R.id.login_message);
+                            loggingButton.setOnClickListener(v1 ->new Thread(() -> {
+                                String user_name = inputUserName.getText().toString();
+                                String user_password = inputUserPassword.getText().toString();
+                                runOnUiThread(() -> {
+                                    loggingProgressBar.setVisibility(View.VISIBLE);
+                                    inputUserName.setFocusable(false);
+                                    inputUserPassword.setFocusable(false);
                                 });
-                            }
-                        }
-                    }).start();
-                }
+                                final String loginReturn = toolClass.login(user_name, user_password);
+                                if (loginReturn == null)
+                                    alertDialog.cancel();
+                                else if (loginReturn.equals("true")) {
+                                    HomeFragment.flushRecycler();
+                                    alertDialog.cancel();
+                                } else {
+                                    runOnUiThread(() -> {
+                                        loginMessage.setText(loginReturn);
+                                        loggingProgressBar.setVisibility(View.GONE);
+                                        inputUserName.setFocusable(true);
+                                        inputUserPassword.setFocusable(true);
+                                    });
+                                }
+                            }).start());
+                        });
+
+                    }
+                }).start();
+            }
+            else {
+                new Thread(() -> {
+                    final LoginAccess loginAccess = toolClass.getUserInformation();
+                    if(loginAccess.access){
+                        final Bitmap bitmap = toolClass.getUrlImageBitmap(loginAccess.userInformation.face);
+                        final LevelWalletInfo levelWalletInfo = toolClass.getUserLevelWalletInfo();
+                        runOnUiThread(() -> {
+                            final Dialog mDialog = TransparentDialog.createLoadingDialog(MainActivity.this,bitmap,loginAccess.userInformation,levelWalletInfo);
+                            mDialog.setCancelable(true);
+                            TextView textView = mDialog.findViewById(R.id.user_information_dialog_exit);
+                            textView.setOnClickListener(v12 -> {
+                                logout(toolClass,userHead,userName);
+                                mDialog.cancel();
+                            });
+                            mDialog.show();
+                        });
+                    }
+                }).start();
             }
         });
     }
@@ -251,13 +224,9 @@ public class MainActivity extends AppCompatActivity {
                     top = l[1],
                     bottom = top + v.getHeight(),
                     right = left + v.getWidth();
-            if (event.getX() > left && event.getX() < right
-                    && event.getY() > top && event.getY() < bottom) {
-                // 点击EditText的事件，忽略它。
-                return false;
-            } else {
-                return true;
-            }
+            // 点击EditText的事件，忽略它。
+            return !(event.getX() > left) || !(event.getX() < right)
+                    || !(event.getY() > top) || !(event.getY() < bottom);
         }
         // 如果焦点不是EditText则忽略，这个发生在视图刚绘制完，第一个焦点不在EditText上，和用户用轨迹球选择其他的焦点
         return false;
@@ -276,21 +245,13 @@ public class MainActivity extends AppCompatActivity {
         if(loginAccess.access){
             final UserInformation userInformation = loginAccess.userInformation;
             final Bitmap faceBitmap = toolClass.getUrlImageBitmap(userInformation.face);
-            runOnUiThread(new Runnable() {
-                @Override
-                public void run() {
-                    userName.setText(userInformation.name);
-                    userHead.setImageBitmap(faceBitmap);
-                }
+            runOnUiThread(() -> {
+                userName.setText(userInformation.name);
+                userHead.setImageBitmap(faceBitmap);
             });
         }
         else{
-            runOnUiThread(new Runnable() {
-                @Override
-                public void run() {
-                    Toast.makeText(MainActivity.this,getString(R.string.login_success_but_get_information_failed),Toast.LENGTH_LONG).show();
-                }
-            });
+            runOnUiThread(() -> Toast.makeText(MainActivity.this,getString(R.string.login_success_but_get_information_failed),Toast.LENGTH_LONG).show());
         }
     }
 

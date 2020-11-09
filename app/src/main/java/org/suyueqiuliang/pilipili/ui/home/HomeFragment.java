@@ -42,6 +42,8 @@ public class HomeFragment extends Fragment {
         gridLayoutManager = new GridLayoutManager(getContext(),3);
         recyclerView.setLayoutManager(gridLayoutManager);
         activity = getActivity();
+        adapter = new HomeVideoCardRecyclerViewAdapter(arrayList,activity);
+        recyclerView.setAdapter(adapter);
         createAdapter();
         recyclerView.addOnScrollListener(new RecyclerView.OnScrollListener() {
             @Override

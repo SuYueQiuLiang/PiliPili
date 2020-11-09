@@ -426,6 +426,8 @@ public class ToolClass {
                 URLConnection urlConnection = url.openConnection();
                 urlConnection.setDoInput(true);
                 urlConnection.setUseCaches(false);
+                urlConnection.setConnectTimeout(3000);
+                urlConnection.setReadTimeout(3000);
                 urlConnection.connect();
                 InputStream is = urlConnection.getInputStream();
                 Bitmap bmp = BitmapFactory.decodeStream(is);
@@ -458,6 +460,8 @@ public class ToolClass {
             connection.setRequestMethod("POST");
             connection.setUseCaches(false); //不使用缓存
             connection.setRequestProperty("Content-Type", "application/x-www-form-urlencoded");
+            connection.setConnectTimeout(3000);
+            connection.setReadTimeout(3000);
             connection.connect();
             BufferedWriter out = new BufferedWriter(new OutputStreamWriter(connection.getOutputStream(),StandardCharsets.UTF_8));
             out.write(postData);
@@ -489,6 +493,8 @@ public class ToolClass {
             connection.setRequestProperty("Cookie",Cookie);
             connection.setUseCaches(false); //不使用缓存
             connection.setRequestProperty("Content-Type", "application/x-www-form-urlencoded");
+            connection.setConnectTimeout(3000);
+            connection.setReadTimeout(3000);
             connection.connect();
             BufferedWriter out = new BufferedWriter(new OutputStreamWriter(connection.getOutputStream(), StandardCharsets.UTF_8));
             out.write(postData);
@@ -517,6 +523,8 @@ public class ToolClass {
             connection.setRequestMethod("GET");
             connection.setUseCaches(false);
             connection.setRequestProperty("Cookie",Cookie);
+            connection.setConnectTimeout(3000);
+            connection.setReadTimeout(3000);
             connection.connect();
             BufferedReader in = new BufferedReader(new InputStreamReader(connection.getInputStream(), StandardCharsets.UTF_8));
             String line;
@@ -540,6 +548,8 @@ public class ToolClass {
             connection.setDoInput(true);
             connection.setRequestMethod("GET");
             connection.setUseCaches(false);
+            connection.setConnectTimeout(3000);
+            connection.setReadTimeout(3000);
             connection.connect();
             BufferedReader in = new BufferedReader(new InputStreamReader(connection.getInputStream(), StandardCharsets.UTF_8));
             String line;
