@@ -11,6 +11,6 @@ public class video{
         this.bullet_chat = bullet_chat;
         this.duration = duration;
     }
-    public String title,title_image,up_name,play_times,bullet_chat,duration;
+    public String title,title_image,up_name,play_times,bullet_chat,duration,bvid;
     public int id,up_id;
 }
