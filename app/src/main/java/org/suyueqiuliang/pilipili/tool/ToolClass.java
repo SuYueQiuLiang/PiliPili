@@ -35,6 +35,7 @@ import java.io.OutputStreamWriter;
 import java.io.UnsupportedEncodingException;
 import java.math.BigInteger;
 import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLConnection;
 import java.net.URLEncoder;
@@ -90,11 +91,59 @@ public class ToolClass {
     public ToolClass() {
 
     }
+    public void playVideo(String urls){
+        StringBuilder document = new StringBuilder();
+        try {
+            URL url = new URL(urls);
+            HttpURLConnection connection = (HttpURLConnection) url
+                    .openConnection();
+            connection.setDoInput(true);
+            connection.setRequestMethod("GET");
+            connection.setUseCaches(false);
+            connection.setRequestProperty("Referer","https://www.bilibili.com");
+            connection.setRequestProperty("Accept","*/*");
+            connection.setRequestProperty("User-Agent","sdbyiuv");
+            connection.setConnectTimeout(3000);
+            connection.setReadTimeout(3000);
+            connection.connect();
+            BufferedReader in = new BufferedReader(new InputStreamReader(connection.getInputStream(), StandardCharsets.UTF_8));
+            String line;
+            while ((line = in.readLine()) != null) {
+                document.append(line);
+            }
+            in.close();
+            connection.disconnect();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+    public String[] getVideoStream(int aid,int cid,int qn){
+        try {
+            if (userData == null || !wasGetInfo)
+                return null;
+            UrlReply urlReply;
+            if(qn != 0)
+                urlReply = urlGetRequestWithCookie(getVideoStream + "?avid=" + aid + "&cid=" + cid +"&qn=" +qn,"SESSDATA=" + ToolClass.userData.SESSDATA);
+            else urlReply = urlGetRequestWithCookie(getVideoStream + "?avid=" + aid + "&cid=" + cid,"SESSDATA=" + ToolClass.userData.SESSDATA);
+            if(urlReply == null)
+                return null;
+            JSONObject jsonObject = new JSONObject(urlReply.json);
+            jsonObject = jsonObject.getJSONObject("data");
+            JSONArray jsonArray = jsonObject.getJSONArray("durl");
+            String[] urls = new String[jsonArray.length()];
+            for(int i=0;i<urls.length;i++)
+                urls[i] = jsonArray.getJSONObject(i).getString("url");
+            return urls;
+        } catch (JSONException e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
     public QualityList getVideoStreamQuality(int aid,int cid){
         try {
             if (userData == null || !wasGetInfo)
                 return null;
-            UrlReply urlReply = urlGetRequestWithCookie(getVideoStream + "?avid=" + aid + "&cid=" + cid,"SESSDATA=" + ToolClass.userData.SESSDATA);
+            UrlReply urlReply = urlGetRequestWithCookie(getVideoStream + "?avid=" + aid + "&cid=" + cid + "&fnval=16","SESSDATA=" + ToolClass.userData.SESSDATA);
             if(urlReply == null)
                 return null;
             JSONObject jsonObject = new JSONObject(urlReply.json);
@@ -419,9 +468,8 @@ public class ToolClass {
                 lastpositon = position;
                 position = urlString.indexOf("/",position+1);
             }
-            File file = new File(localFilePath + urlString.substring(lastpositon+1));
+            File file = new File(localCachePath + urlString.substring(lastpositon+1));
             if(!file.exists()){
-                file.createNewFile();
                 URL url = new URL(urlString);
                 URLConnection urlConnection = url.openConnection();
                 urlConnection.setDoInput(true);
@@ -433,7 +481,7 @@ public class ToolClass {
                 Bitmap bmp = BitmapFactory.decodeStream(is);
                 is.close();
                 BufferedOutputStream bos = new BufferedOutputStream(new FileOutputStream(file));
-                bmp.compress(Bitmap.CompressFormat.JPEG, 100, bos);
+                bmp.compress(Bitmap.CompressFormat.JPEG, 25, bos);
                 bos.flush();
                 bos.close();
                 return  bmp;

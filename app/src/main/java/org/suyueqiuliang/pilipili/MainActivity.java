@@ -138,6 +138,7 @@ public class MainActivity extends AppCompatActivity {
                                 if (loginReturn == null)
                                     alertDialog.cancel();
                                 else if (loginReturn.equals("true")) {
+                                    showUserInformation(toolClass,userHead,userName);
                                     HomeFragment.flushRecycler();
                                     alertDialog.cancel();
                                 } else {
@@ -166,6 +167,7 @@ public class MainActivity extends AppCompatActivity {
                             TextView textView = mDialog.findViewById(R.id.user_information_dialog_exit);
                             textView.setOnClickListener(v12 -> {
                                 logout(toolClass,userHead,userName);
+                                HomeFragment.flushRecycler();
                                 mDialog.cancel();
                             });
                             mDialog.show();

@@ -5,6 +5,7 @@ android {
     compileOptions {
         sourceCompatibility 1.8
         targetCompatibility 1.8
+        targetCompatibility JavaVersion.VERSION_1_8
     }
     defaultConfig {
         applicationId "org.suyueqiuliang.pilipili"
@@ -23,9 +24,13 @@ android {
         }
     }
 }
-
 dependencies {
     implementation fileTree(dir: "libs", include: ["*.jar"])
+    implementation 'tv.danmaku.ijk.media:ijkplayer-java:0.8.8'
+    implementation 'tv.danmaku.ijk.media:ijkplayer-armv7a:0.6.1'
+    implementation 'com.google.android.exoplayer:exoplayer-core:2.12.0'
+    implementation 'com.google.android.exoplayer:exoplayer-dash:2.12.0'
+    implementation 'com.google.android.exoplayer:exoplayer-ui:2.12.0'
     implementation 'androidx.appcompat:appcompat:1.2.0'
     implementation 'com.google.android.material:material:1.2.1'
     implementation 'androidx.constraintlayout:constraintlayout:2.0.4'
