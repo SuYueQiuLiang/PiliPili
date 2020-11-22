@@ -5,8 +5,8 @@ import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Color;
-import android.util.JsonReader;
 import android.util.Log;
+
 
 
 import com.google.zxing.BarcodeFormat;
@@ -23,7 +23,6 @@ import org.suyueqiuliang.pilipili.R;
 import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
-import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -35,7 +34,6 @@ import java.io.OutputStreamWriter;
 import java.io.UnsupportedEncodingException;
 import java.math.BigInteger;
 import java.net.HttpURLConnection;
-import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLConnection;
 import java.net.URLEncoder;
@@ -267,6 +265,7 @@ public class ToolClass {
             }
         } catch (JSONException | UnsupportedEncodingException e) {
             e.printStackTrace();
+
             return e.toString();
         }
     }
@@ -617,13 +616,14 @@ public class ToolClass {
     }
     private String encrypt(String str, LoginKey loginKey){
         try {
-            //base64编码的公钥
-            byte[] decoded = java.util.Base64.getMimeDecoder().decode(loginKey.RSAPublicKey);
+            //byte[] decoded = Base64.getMimeDecoder().decode(loginKey.RSAPublicKey);
+            byte[] decoded = android.util.Base64.decode(loginKey.RSAPublicKey, android.util.Base64.DEFAULT);
             RSAPublicKey pubKey = (RSAPublicKey) KeyFactory.getInstance("RSA").generatePublic(new X509EncodedKeySpec(decoded));
             //RSA加密
             Cipher cipher = Cipher.getInstance("RSA/ECB/PKCS1Padding");
             cipher.init(Cipher.ENCRYPT_MODE, pubKey);
-            return Base64.getEncoder().encodeToString(cipher.doFinal((loginKey.hash+str).getBytes(StandardCharsets.UTF_8)));
+            //return Base64.getEncoder().encodeToString(cipher.doFinal((loginKey.hash+str).getBytes(StandardCharsets.UTF_8)));
+            return android.util.Base64.encodeToString((cipher.doFinal((loginKey.hash+str).getBytes(StandardCharsets.UTF_8))), android.util.Base64.DEFAULT);
         }catch (NoSuchAlgorithmException | InvalidKeyException | NoSuchPaddingException | BadPaddingException | InvalidKeySpecException | IllegalBlockSizeException e) {
             e.printStackTrace();
             return null;

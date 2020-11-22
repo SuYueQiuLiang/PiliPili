@@ -75,7 +75,6 @@ public class VideoActivity extends AppCompatActivity {
                 player.play();
             });
         }).start();
-
     }
     private void hideSystemNavigationBar() {
         View decorView = getWindow().getDecorView();
