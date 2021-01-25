@@ -1,8 +1,6 @@
 package org.suyueqiuliang.pilipili.ui.home;
 
-import android.annotation.SuppressLint;
 import android.app.Activity;
-import android.graphics.Bitmap;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.view.LayoutInflater;
@@ -11,17 +9,16 @@ import android.view.ViewGroup;
 
 import androidx.annotation.NonNull;
 import androidx.fragment.app.Fragment;
-import androidx.fragment.app.FragmentActivity;
 import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
-import org.suyueqiuliang.pilipili.MainActivity;
+import org.json.JSONException;
 import org.suyueqiuliang.pilipili.R;
 import org.suyueqiuliang.pilipili.tool.ToolClass;
 import org.suyueqiuliang.pilipili.tool.video;
 
-import java.lang.ref.WeakReference;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Objects;
 
@@ -72,7 +69,12 @@ public class HomeFragment extends Fragment {
     private static class createAdapter extends AsyncTask<String, Void, ArrayList<video>> {
         @Override
         protected ArrayList<video> doInBackground(String... voids) {
-            return toolClass.getAppRecommendVideo();
+            try {
+                return toolClass.getAppRecommendVideo();
+            } catch (IOException | JSONException e) {
+                e.printStackTrace();
+                return null;
+            }
         }
 
         protected void onPostExecute(ArrayList<video> arrayList) {
@@ -84,7 +86,12 @@ public class HomeFragment extends Fragment {
     private static class flushRecycler extends AsyncTask<String, Void, ArrayList<video>> {
         @Override
         protected ArrayList<video> doInBackground(String... voids) {
-            return toolClass.getAppRecommendVideo();
+            try {
+                return toolClass.getAppRecommendVideo();
+            } catch (IOException | JSONException e) {
+                e.printStackTrace();
+                return null;
+            }
         }
 
         protected void onPostExecute(ArrayList<video> arrayList) {
@@ -103,7 +110,12 @@ public class HomeFragment extends Fragment {
     private static class addRecycler extends AsyncTask<String, Void, ArrayList<video>> {
         @Override
         protected ArrayList<video> doInBackground(String... voids) {
-            return toolClass.getAppRecommendVideo();
+            try {
+                return toolClass.getAppRecommendVideo();
+            } catch (IOException | JSONException e) {
+                e.printStackTrace();
+                return null;
+            }
         }
 
         protected void onPostExecute(ArrayList<video> arrayList) {

@@ -47,6 +47,7 @@ import org.suyueqiuliang.pilipili.tool.video;
 import org.suyueqiuliang.pilipili.ui.home.HomeFragment;
 import org.suyueqiuliang.pilipili.ui.home.HomeVideoCardRecyclerViewAdapter;
 
+import java.io.IOException;
 import java.util.ArrayList;
 
 public class MainActivity extends AppCompatActivity {
@@ -93,10 +94,14 @@ public class MainActivity extends AppCompatActivity {
 
         //尝试从本地读取数据登陆
         new Thread(() -> {
-            loginWithStorageDataReturnInfo loginWithStorageDataReturnInfo = toolClass.loginWithStorageData();
-            if(loginWithStorageDataReturnInfo.equals(org.suyueqiuliang.pilipili.tool.loginWithStorageDataReturnInfo.ok)){
-                showUserInformation(toolClass,userHead,userName);
-                runOnUiThread(HomeFragment::flushRecycler);
+            try {
+                loginWithStorageDataReturnInfo loginWithStorageDataReturnInfo = toolClass.loginWithStorageData();
+                if(loginWithStorageDataReturnInfo.equals(org.suyueqiuliang.pilipili.tool.loginWithStorageDataReturnInfo.ok)){
+                    showUserInformation(toolClass,userHead,userName);
+                    runOnUiThread(HomeFragment::flushRecycler);
+                }
+            } catch (JSONException | IOException e) {
+                e.printStackTrace();
             }
         }).start();
 
@@ -106,58 +111,50 @@ public class MainActivity extends AppCompatActivity {
         userHead.setOnClickListener(v -> {
             searchBar.clearFocus();
             if (!toolClass.wasLogin()) {
-                new Thread(() -> {
-                    loginWithStorageDataReturnInfo loginWithStorageDataReturnInfo = toolClass.loginWithStorageData();
-                    if(loginWithStorageDataReturnInfo.equals(org.suyueqiuliang.pilipili.tool.loginWithStorageDataReturnInfo.ok)) {
-                        showUserInformation(toolClass, userHead, userName);
+                AlertDialog.Builder customizeDialog =
+                        new AlertDialog.Builder(MainActivity.this);
+                final View dialogView = LayoutInflater.from(MainActivity.this)
+                        .inflate(R.layout.loging_dialog, null);
+                customizeDialog.setView(dialogView);
+                final AlertDialog alertDialog = customizeDialog.show();
+                final ProgressBar loggingProgressBar = alertDialog.findViewById(R.id.logging_progressBar);
+                Button loggingButton = alertDialog.findViewById(R.id.logging_button);
+                final EditText inputUserName = alertDialog.findViewById(R.id.input_user_name);
+                final EditText inputUserPassword = alertDialog.findViewById(R.id.input_user_password);
+                final TextView loginMessage = alertDialog.findViewById(R.id.login_message);
+                loggingButton.setOnClickListener(v1 ->new Thread(() -> {
+                    try {
+                        String user_name = inputUserName.getText().toString();
+                        String user_password = inputUserPassword.getText().toString();
                         runOnUiThread(() -> {
+                            loggingProgressBar.setVisibility(View.VISIBLE);
+                            inputUserName.setFocusable(false);
+                            inputUserPassword.setFocusable(false);
+                        });
+                        final String loginReturn = toolClass.login(user_name, user_password);
+                        if (loginReturn == null)
+                            alertDialog.cancel();
+                        else if (loginReturn.equals("true")) {
+                            showUserInformation(toolClass,userHead,userName);
                             HomeFragment.flushRecycler();
-                        });
-                    }else {
-                        runOnUiThread(()->{
-                            AlertDialog.Builder customizeDialog =
-                                    new AlertDialog.Builder(MainActivity.this);
-                            final View dialogView = LayoutInflater.from(MainActivity.this)
-                                    .inflate(R.layout.loging_dialog, null);
-                            customizeDialog.setView(dialogView);
-                            final AlertDialog alertDialog = customizeDialog.show();
-                            final ProgressBar loggingProgressBar = alertDialog.findViewById(R.id.logging_progressBar);
-                            Button loggingButton = alertDialog.findViewById(R.id.logging_button);
-                            final EditText inputUserName = alertDialog.findViewById(R.id.input_user_name);
-                            final EditText inputUserPassword = alertDialog.findViewById(R.id.input_user_password);
-                            final TextView loginMessage = alertDialog.findViewById(R.id.login_message);
-                            loggingButton.setOnClickListener(v1 ->new Thread(() -> {
-                                String user_name = inputUserName.getText().toString();
-                                String user_password = inputUserPassword.getText().toString();
-                                runOnUiThread(() -> {
-                                    loggingProgressBar.setVisibility(View.VISIBLE);
-                                    inputUserName.setFocusable(false);
-                                    inputUserPassword.setFocusable(false);
-                                });
-                                final String loginReturn = toolClass.login(user_name, user_password);
-                                if (loginReturn == null)
-                                    alertDialog.cancel();
-                                else if (loginReturn.equals("true")) {
-                                    showUserInformation(toolClass,userHead,userName);
-                                    HomeFragment.flushRecycler();
-                                    alertDialog.cancel();
-                                } else {
-                                    runOnUiThread(() -> {
-                                        loginMessage.setText(loginReturn);
-                                        loggingProgressBar.setVisibility(View.GONE);
-                                        inputUserName.setFocusable(true);
-                                        inputUserPassword.setFocusable(true);
-                                    });
-                                }
-                            }).start());
-                        });
-
+                            alertDialog.cancel();
+                        } else {
+                            runOnUiThread(() -> {
+                                loginMessage.setText(loginReturn);
+                                loggingProgressBar.setVisibility(View.GONE);
+                                inputUserName.setFocusable(true);
+                                inputUserPassword.setFocusable(true);
+                            });
+                        }
+                    } catch (JSONException | IOException e) {
+                        e.printStackTrace();
                     }
-                }).start();
+                }).start());
             }
             else {
                 new Thread(() -> {
-                    final LoginAccess loginAccess = toolClass.getUserInformation();
+                    try {
+                        final LoginAccess loginAccess = toolClass.getUserInformation();
                     if(loginAccess.access){
                         final Bitmap bitmap = toolClass.getUrlImageBitmap(loginAccess.userInformation.face);
                         final LevelWalletInfo levelWalletInfo = toolClass.getUserLevelWalletInfo();
@@ -172,6 +169,9 @@ public class MainActivity extends AppCompatActivity {
                             });
                             mDialog.show();
                         });
+                    }
+                    } catch (JSONException | IOException e) {
+                        e.printStackTrace();
                     }
                 }).start();
             }
@@ -243,17 +243,21 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void showUserInformation (final ToolClass toolClass, final ImageView userHead, final TextView userName){
-        LoginAccess loginAccess = toolClass.getUserInformation();
-        if(loginAccess.access){
-            final UserInformation userInformation = loginAccess.userInformation;
-            final Bitmap faceBitmap = toolClass.getUrlImageBitmap(userInformation.face);
-            runOnUiThread(() -> {
-                userName.setText(userInformation.name);
-                userHead.setImageBitmap(faceBitmap);
-            });
-        }
-        else{
-            runOnUiThread(() -> Toast.makeText(MainActivity.this,getString(R.string.login_success_but_get_information_failed),Toast.LENGTH_LONG).show());
+        try{
+            LoginAccess loginAccess = toolClass.getUserInformation();
+            if(loginAccess.access){
+                final UserInformation userInformation = loginAccess.userInformation;
+                final Bitmap faceBitmap = toolClass.getUrlImageBitmap(userInformation.face);
+                runOnUiThread(() -> {
+                    userName.setText(userInformation.name);
+                    userHead.setImageBitmap(faceBitmap);
+                });
+            }
+            else{
+                runOnUiThread(() -> Toast.makeText(MainActivity.this,getString(R.string.login_success_but_get_information_failed),Toast.LENGTH_LONG).show());
+            }
+        } catch (JSONException | IOException e) {
+            e.printStackTrace();
         }
     }
 

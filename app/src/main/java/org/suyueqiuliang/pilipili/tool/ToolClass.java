@@ -7,8 +7,6 @@ import android.graphics.BitmapFactory;
 import android.graphics.Color;
 import android.util.Log;
 
-
-
 import com.google.zxing.BarcodeFormat;
 import com.google.zxing.EncodeHintType;
 import com.google.zxing.MultiFormatWriter;
@@ -22,7 +20,6 @@ import org.suyueqiuliang.pilipili.R;
 
 import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
-import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -30,12 +27,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
-import java.io.OutputStreamWriter;
-import java.io.UnsupportedEncodingException;
 import java.math.BigInteger;
 import java.net.HttpURLConnection;
 import java.net.URL;
-import java.net.URLConnection;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.security.InvalidKeyException;
@@ -46,7 +40,6 @@ import java.security.interfaces.RSAPublicKey;
 import java.security.spec.InvalidKeySpecException;
 import java.security.spec.X509EncodedKeySpec;
 import java.util.ArrayList;
-import java.util.Base64;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -55,9 +48,15 @@ import javax.crypto.Cipher;
 import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.NoSuchPaddingException;
 
-
+import okhttp3.Call;
+import okhttp3.MediaType;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.RequestBody;
+import okhttp3.Response;
 
 public class ToolClass {
+    OkHttpClient okHttpClient;
     static private String localFilePath = null;
     static private String localCachePath = null;
     @SuppressLint("StaticFieldLeak")
@@ -67,9 +66,9 @@ public class ToolClass {
     private final String appKey = "4409e2ce8ffd12b8";
     private final String appSecKey = "59b43e04ad6965f34319062b478f83dd";
 
-    private final String app_head = "http://app.bilibili.com";
-    private final String api_head = "http://api.bilibili.com";
-    private final String passportHead = "http://passport.bilibili.com";
+    private final String app_head = "https://app.bilibili.com";
+    private final String api_head = "https://api.bilibili.com";
+    private final String passportHead = "https://passport.bilibili.com";
 
 
     private final String getKeyUrl = passportHead + "/api/oauth2/getKey";
@@ -84,10 +83,11 @@ public class ToolClass {
         ToolClass.context = context;
         localFilePath = context.getExternalFilesDir("res")+"/";
         localCachePath = context.getCacheDir() + "/";
+        okHttpClient = new OkHttpClient();
     }
 
     public ToolClass() {
-
+        okHttpClient = new OkHttpClient();
     }
     public void playVideo(String urls){
         StringBuilder document = new StringBuilder();
@@ -115,177 +115,119 @@ public class ToolClass {
             e.printStackTrace();
         }
     }
-    public String[] getVideoStream(int aid,int cid,int qn){
-        try {
-            if (userData == null || !wasGetInfo)
+    public String[] getVideoStream(int aid,int cid,int qn) throws IOException, JSONException {
+        if (userData == null || !wasGetInfo)
+            return null;
+        Response response;
+        if(qn != 0)
+            response = urlGetRequestWithCookie(getVideoStream + "?avid=" + aid + "&cid=" + cid +"&qn=" +qn,"SESSDATA=" + ToolClass.userData.SESSDATA);
+        else response = urlGetRequestWithCookie(getVideoStream + "?avid=" + aid + "&cid=" + cid,"SESSDATA=" + ToolClass.userData.SESSDATA);
+        String responseString = response.body().string();
+        System.out.println(responseString);
+        JSONObject jsonObject = new JSONObject(responseString);
+        jsonObject = jsonObject.getJSONObject("data");
+        JSONArray jsonArray = jsonObject.getJSONArray("durl");
+        String[] urls = new String[jsonArray.length()];
+        //如果存在多个视频，全部返回
+        for(int i=0;i<urls.length;i++)
+            urls[i] = jsonArray.getJSONObject(i).getString("url");
+        return urls;
+    }
+    public QualityList getVideoStreamQuality(int aid,int cid) throws IOException, JSONException {
+        if (userData == null || !wasGetInfo)
+            return null;
+        Response response = urlGetRequest(getVideoStream + "?avid=" + aid + "&cid=" + cid + "&fnval=2");
+        JSONObject jsonObject = new JSONObject(response.body().string());
+        jsonObject = jsonObject.getJSONObject("data");
+        ArrayList<String> accept_description = new ArrayList<>();
+        ArrayList<Integer> accept_quality = new ArrayList<>();
+        for(int i =0;i<jsonObject.getJSONArray("accept_description").length();i++){
+            accept_description.add(jsonObject.getJSONArray("accept_description").getString(i));
+            accept_quality.add(jsonObject.getJSONArray("accept_quality").getInt(i));
+        }
+        return new QualityList(accept_description,accept_quality);
+    }
+    public VideoInformation getVideoInformation(int aid) throws IOException, JSONException {
+        if (userData != null && !wasGetInfo)
+            return null;
+        else if (userData != null) {
+            Response response = urlGetRequest(getVideoInformation + "?aid=" + aid);
+            JSONObject jsonObject = new JSONObject(response.body().string());
+            if(jsonObject.getInt("code") == 0){
+                jsonObject = jsonObject.getJSONObject("data");
+                ArrayList<Page> pages = new ArrayList<>();
+                JSONArray jsonArray = jsonObject.getJSONArray("pages");
+                for(int i = 0;i <jsonObject.getInt("videos");i++){
+                    Page page = new Page(jsonArray.getJSONObject(i).getInt("cid"),jsonArray.getJSONObject(i).getString("part"));
+                    pages.add(page);
+                }
+                JSONObject ownerJsonObject = jsonObject.getJSONObject("owner");
+                Owner owner = new Owner(ownerJsonObject.getInt("mid"),ownerJsonObject.getString("name"),ownerJsonObject.getString("face"));
+                return new VideoInformation(jsonObject.getInt("aid"),jsonObject.getString("bvid"),jsonObject.getString("title"),jsonObject.getString("pic"),jsonObject.getString("desc"),owner,pages,jsonObject.getInt("videos"),jsonObject.getInt("duration"),jsonObject.getInt("pubdate"),jsonObject.getInt("ctime"),jsonObject.getInt("tid"),jsonObject.getString("tname"),jsonObject.getInt("copyright"),jsonObject.getInt("state"));
+            }else
                 return null;
-            UrlReply urlReply;
-            if(qn != 0)
-                urlReply = urlGetRequestWithCookie(getVideoStream + "?avid=" + aid + "&cid=" + cid +"&qn=" +qn,"SESSDATA=" + ToolClass.userData.SESSDATA);
-            else urlReply = urlGetRequestWithCookie(getVideoStream + "?avid=" + aid + "&cid=" + cid,"SESSDATA=" + ToolClass.userData.SESSDATA);
-            if(urlReply == null)
-                return null;
-            JSONObject jsonObject = new JSONObject(urlReply.json);
-            jsonObject = jsonObject.getJSONObject("data");
-            JSONArray jsonArray = jsonObject.getJSONArray("durl");
-            String[] urls = new String[jsonArray.length()];
-            for(int i=0;i<urls.length;i++)
-                urls[i] = jsonArray.getJSONObject(i).getString("url");
-            return urls;
-        } catch (JSONException e) {
-            e.printStackTrace();
+        } else {
             return null;
         }
     }
-    public QualityList getVideoStreamQuality(int aid,int cid){
-        try {
-            if (userData == null || !wasGetInfo)
-                return null;
-            UrlReply urlReply = urlGetRequestWithCookie(getVideoStream + "?avid=" + aid + "&cid=" + cid + "&fnval=16","SESSDATA=" + ToolClass.userData.SESSDATA);
-            if(urlReply == null)
-                return null;
-            JSONObject jsonObject = new JSONObject(urlReply.json);
-            jsonObject = jsonObject.getJSONObject("data");
-            ArrayList<String> accept_description = new ArrayList<>();
-            ArrayList<Integer> accept_quality = new ArrayList<>();
-            for(int i =0;i<jsonObject.getJSONArray("accept_description").length();i++){
-                accept_description.add(jsonObject.getJSONArray("accept_description").getString(i));
-                accept_quality.add(jsonObject.getJSONArray("accept_quality").getInt(i));
-            }
-            return new QualityList(accept_description,accept_quality);
-        } catch (JSONException e) {
-            e.printStackTrace();
-            return null;
-        }
-    }
-    public VideoInformation getVideoInformation(int aid){
-        try {
-            if (userData != null && !wasGetInfo)
-                return null;
-            else if (userData != null) {
-                UrlReply urlReply = urlGetRequest(getVideoInformation + "?aid=" + aid);
-                if(urlReply == null)
-                    return null;
-                JSONObject jsonObject = new JSONObject(urlReply.json);
-                if(jsonObject.getInt("code") == 0){
-                    jsonObject = jsonObject.getJSONObject("data");
-                    ArrayList<Page> pages = new ArrayList<>();
-                    JSONArray jsonArray = jsonObject.getJSONArray("pages");
-                    for(int i = 0;i <jsonObject.getInt("videos");i++){
-                        Page page = new Page(jsonArray.getJSONObject(i).getInt("cid"),jsonArray.getJSONObject(i).getString("part"));
-                        pages.add(page);
-                    }
-                    JSONObject ownerJsonObject = jsonObject.getJSONObject("owner");
-                    Owner owner = new Owner(ownerJsonObject.getInt("mid"),ownerJsonObject.getString("name"),ownerJsonObject.getString("face"));
-                    return new VideoInformation(jsonObject.getInt("aid"),jsonObject.getString("bvid"),jsonObject.getString("title"),jsonObject.getString("pic"),jsonObject.getString("desc"),owner,pages,jsonObject.getInt("videos"),jsonObject.getInt("duration"),jsonObject.getInt("pubdate"),jsonObject.getInt("ctime"),jsonObject.getInt("tid"),jsonObject.getString("tname"),jsonObject.getInt("copyright"),jsonObject.getInt("state"));
-                }else
-                    return null;
-            } else {
-                return null;
-            }
-        } catch (JSONException e) {
-            e.printStackTrace();
-            return null;
-        }
-    }
-
     public boolean wasLogin(){
         return userData!=null;
     }
-    public ArrayList<video> getAppRecommendVideo(){
-        try {
-            if(userData != null && !wasGetInfo)
-                return null;
-            UrlReply urlReply;
-            if(userData != null) urlReply = urlGetRequestWithCookie(getAppRecommendVideo + "?" + getSign("access_key=" + userData.access_token +"&appkey=1d8b6e7d45233436&mobi_app=android&network=wifi&platform=android&qn=32&ts=" + getCurrentTimeMillis()),"sid=" + readSid());
-            else urlReply = urlGetRequestWithCookie(getAppRecommendVideo,"sid=" + readSid());
-            if(urlReply == null)
-                return null;
-            JSONObject jsonObject = new JSONObject(urlReply.json);
-            jsonObject = jsonObject.getJSONObject("data");
-            JSONArray jsonArray = jsonObject.getJSONArray("items");
-            ArrayList<video> videos = new ArrayList<>();
-            for(int i=0;i<jsonArray.length();i++){
-                if(jsonArray.getJSONObject(i).getString("goto").equals("av")){
-                    String duration = jsonArray.getJSONObject(i).getString("cover_right_text");
-                    JSONObject args = jsonArray.getJSONObject(i).getJSONObject("args");
-                    JSONObject data = jsonArray.getJSONObject(i);
-                    videos.add(new video(data.getString("title"),data.getString("cover"),args.getInt("aid"),args.getInt("up_id"),args.getString("up_name"),data.getString("cover_left_text_1"),data.getString("cover_left_text_2"),duration));
-                }
-            }
-            return videos;
-        } catch (JSONException e) {
-            e.printStackTrace();
+    public ArrayList<video> getAppRecommendVideo() throws IOException, JSONException {
+        if(userData != null && !wasGetInfo)
             return null;
-        }
-    }
-    public loginWithStorageDataReturnInfo loginWithStorageData(){
-        try {
-            UserData userData = readUserData();
-            if(userData == null)
-                return loginWithStorageDataReturnInfo.failed;
-            UrlReply urlReply = urlGetRequest(userInfo + "?" + getSign("access_key=" + userData.access_token + "&appkey=" + appKey + "&ts=" + getCurrentTimeMillis()));
-            if(urlReply ==null)
-                return loginWithStorageDataReturnInfo.notOnline;
-            if(new JSONObject(urlReply.json).getInt("code")!=0){
-                logout();
-                return loginWithStorageDataReturnInfo.failed;
-            }else {
-                ToolClass.userData = userData;
-                return loginWithStorageDataReturnInfo.ok;
+        Response response;
+        if(userData != null) response = urlGetRequestWithCookie(getAppRecommendVideo + "?" + getSign("access_key=" + userData.access_token +"&appkey=1d8b6e7d45233436&mobi_app=android&network=wifi&platform=android&qn=32&ts=" + getCurrentTimeMillis()),"sid=" + readSid());
+        else response = urlGetRequestWithCookie(getAppRecommendVideo,"sid=" + readSid());
+        if(response == null)
+            return null;
+        JSONObject jsonObject = new JSONObject(response.body().string());
+        jsonObject = jsonObject.getJSONObject("data");
+        JSONArray jsonArray = jsonObject.getJSONArray("items");
+        ArrayList<video> videos = new ArrayList<>();
+        for(int i=0;i<jsonArray.length();i++){
+            if(jsonArray.getJSONObject(i).getString("goto").equals("av")){
+                String duration = jsonArray.getJSONObject(i).getString("cover_right_text");
+                JSONObject args = jsonArray.getJSONObject(i).getJSONObject("args");
+                JSONObject data = jsonArray.getJSONObject(i);
+                videos.add(new video(data.getString("title"),data.getString("cover"),args.getInt("aid"),args.getInt("up_id"),args.getString("up_name"),data.getString("cover_left_text_1"),data.getString("cover_left_text_2"),duration));
             }
-        } catch (JSONException e) {
-            e.printStackTrace();
+        }
+        return videos;
+    }
+    public loginWithStorageDataReturnInfo loginWithStorageData() throws IOException, JSONException {
+        UserData userData = readUserData();
+        if(userData == null)
             return loginWithStorageDataReturnInfo.failed;
+        Response response = urlGetRequest(userInfo + "?" + getSign("access_key=" + userData.access_token + "&appkey=" + appKey + "&ts=" + getCurrentTimeMillis()));
+        if(response ==null)
+            return loginWithStorageDataReturnInfo.notOnline;
+        if(new JSONObject(response.body().string()).getInt("code")!=0){
+            logout();
+            return loginWithStorageDataReturnInfo.failed;
+        }else {
+            ToolClass.userData = userData;
+            return loginWithStorageDataReturnInfo.ok;
         }
     }
-    public String login(String username, String password){
-        try {
-            UrlReply urlReply = urlPostRequest(getKeyUrl , getSign("appkey=" + appKey));
-            if(urlReply == null)
-                return null;
-            saveSid(getCookie(urlReply.cookie,"sid"));
-            JSONObject jsonObject = new JSONObject(urlReply.json);
-            jsonObject = jsonObject.getJSONObject("data");
-            LoginKey loginKey = new LoginKey(jsonObject.getString("hash"),subStringRSAPublicKey(jsonObject.getString("key")));
-            urlReply = urlPostRequestWithCookie(loginUrl,"sid=" + readSid(),getSign("appkey=" + URLEncoder.encode(appKey,"UTF-8") + "&mobi_app=android&password=" + URLEncoder.encode(encrypt(password, loginKey),"UTF-8")  + "&platform=android&ts=" + URLEncoder.encode(String.valueOf(System.currentTimeMillis()/1000),"UTF-8") + "&username="+URLEncoder.encode(username,"UTF-8")));
-            if(urlReply == null)
-                return null;
-            jsonObject = new JSONObject(urlReply.json);
-            if(jsonObject.getInt("code") == 0){
-                JSONObject data = jsonObject.getJSONObject("data");
-                saveUserData(data);
-                userData = readUserData();
-                return "true";
-            }
-            else {
-                if(jsonObject.has("message")){
-                    return jsonObject.getString("message");
-                }else return context.getString(R.string.unknown_failed_message);
-            }
-        } catch (JSONException | UnsupportedEncodingException e) {
-            e.printStackTrace();
-
-            return e.toString();
+    public String login(String username, String password) throws IOException, JSONException {
+        Response response = urlPostJsonRequest(getKeyUrl , getSign("appkey=" + appKey));
+        saveSid(getCookie(response.header("Set-Cookie"),"sid"));
+        JSONObject jsonObject = new JSONObject(response.body().string());
+        jsonObject = jsonObject.getJSONObject("data");
+        LoginKey loginKey = new LoginKey(jsonObject.getString("hash"),subStringRSAPublicKey(jsonObject.getString("key")));
+        response = urlPostJsonRequestWithCookie(loginUrl,"sid=" + readSid(),getSign("appkey=" + URLEncoder.encode(appKey,"UTF-8") + "&mobi_app=android&password=" + URLEncoder.encode(encrypt(password, loginKey),"UTF-8")  + "&platform=android&ts=" + URLEncoder.encode(String.valueOf(System.currentTimeMillis()/1000),"UTF-8") + "&username="+URLEncoder.encode(username,"UTF-8")));
+        jsonObject = new JSONObject(response.body().string());
+        if(jsonObject.getInt("code") == 0){
+            JSONObject data = jsonObject.getJSONObject("data");
+            saveUserData(data);
+            userData = readUserData();
+            return "true";
         }
-    }
-    private String loginWithIdentifyingCode(String username,String password){
-        try {
-            UrlReply urlReply = urlPostRequest(getKeyUrl , getSign("appkey=" + appKey));
-            if(urlReply == null)
-                return null;
-            saveSid(getCookie(urlReply.cookie,"sid"));
-            JSONObject jsonObject = new JSONObject(urlReply.json);
-            jsonObject = jsonObject.getJSONObject("data");
-            LoginKey loginKey = new LoginKey(jsonObject.getString("hash"),subStringRSAPublicKey(jsonObject.getString("key")));
-            Log.d("RSAPublicKey",loginKey.RSAPublicKey);
-            urlReply = urlPostRequestWithCookie(loginUrl,"sid=" + readSid(),getSign("appkey=" + URLEncoder.encode(appKey,"UTF-8") + "&mobi_app=android&password=" + URLEncoder.encode(encrypt(password, loginKey),"UTF-8")  + "&platform=android&ts=" + URLEncoder.encode(String.valueOf(getCurrentTimeMillis()),"UTF-8") + "&username="+URLEncoder.encode(username,"UTF-8")));
-            if(urlReply == null)
-                return null;
-            return urlReply.json;
-        } catch (JSONException | UnsupportedEncodingException e) {
-            e.printStackTrace();
-            return null;
+        else {
+            if(jsonObject.has("message")){
+                return jsonObject.getString("message");
+            }else return context.getString(R.string.unknown_failed_message);
         }
     }
     public void saveUserData(JSONObject jsonObject) {
@@ -373,45 +315,32 @@ public class ToolClass {
         }
         return bitmap;
     }
-    public LoginAccess getUserInformation(){
-        try{
-            UrlReply urlReply = urlGetRequest(userInfo + "?" + getSign("access_key=" + userData.access_token + "&appkey=" + appKey + "&ts=" + getCurrentTimeMillis()));
-            if(urlReply == null)
-                return null;
-            if(new JSONObject(urlReply.json).getInt("code")==0){
-                JSONObject data = (new JSONObject(urlReply.json)).getJSONObject("data");
-                boolean vip = false;
-                if(data.getJSONObject("vip").getInt("status")==1)
-                    vip = true;
-                wasGetInfo = true;
-                return new LoginAccess(true,new UserInformation(data.getString("mid"),data.getString("name"),data.getString("sign"),data.getInt("coins"),data.getString("face"),data.getInt("sex"),data.getInt("level"),vip,data.getJSONObject("vip").getString("nickname_color")));
-            }else{
-                logout();
-                return new LoginAccess(false,null);
-            }
-        } catch (JSONException e) {
-            e.printStackTrace();
-            return null;
+    public LoginAccess getUserInformation() throws IOException, JSONException {
+        Response response = urlGetRequest(userInfo + "?" + getSign("access_key=" + userData.access_token + "&appkey=" + appKey + "&ts=" + getCurrentTimeMillis()));
+        String responseString = response.body().string();
+        if(new JSONObject(responseString).getInt("code")==0){
+            JSONObject data = new JSONObject(responseString).getJSONObject("data");
+            boolean vip = false;
+            if(data.getJSONObject("vip").getInt("status")==1)
+                vip = true;
+            wasGetInfo = true;
+            return new LoginAccess(true,new UserInformation(data.getString("mid"),data.getString("name"),data.getString("sign"),data.getInt("coins"),data.getString("face"),data.getInt("sex"),data.getInt("level"),vip,data.getJSONObject("vip").getString("nickname_color")));
+        }else{
+            logout();
+            return new LoginAccess(false,null);
         }
     }
-    public LevelWalletInfo getUserLevelWalletInfo(){
-        try{
-            if(!wasGetInfo)
-                return null;
-            UrlReply urlReply = urlGetRequestWithCookie(userLevelWallet,"SESSDATA=" + userData.SESSDATA);
-            if(urlReply == null)
-                return null;
-            JSONObject jsonObject = new JSONObject(urlReply.json);
-            if(jsonObject.getInt("code") == 0){
-                JSONObject data = jsonObject.getJSONObject("data");
-                JSONObject levelInfo = data.getJSONObject("level_info");
-                JSONObject wallet = data.getJSONObject("wallet");
-                return new LevelWalletInfo(levelInfo.getInt("current_level"),levelInfo.getInt("current_min"),levelInfo.getInt("current_exp"),levelInfo.getInt("next_exp"),wallet.getInt("bcoin_balance"));
-            }else return null;
-        } catch (JSONException e) {
-            e.printStackTrace();
+    public LevelWalletInfo getUserLevelWalletInfo() throws IOException, JSONException {
+        if(!wasGetInfo)
             return null;
-        }
+        Response response = urlGetRequestWithCookie(userLevelWallet,"SESSDATA=" + userData.SESSDATA);
+        JSONObject jsonObject = new JSONObject(response.body().string());
+        if(jsonObject.getInt("code") == 0){
+            JSONObject data = jsonObject.getJSONObject("data");
+            JSONObject levelInfo = data.getJSONObject("level_info");
+            JSONObject wallet = data.getJSONObject("wallet");
+            return new LevelWalletInfo(levelInfo.getInt("current_level"),levelInfo.getInt("current_min"),levelInfo.getInt("current_exp"),levelInfo.getInt("next_exp"),wallet.getInt("bcoin_balance"));
+        }else return null;
     }
     public void logout(){
         new File(localFilePath + "sid.inf").delete();
@@ -419,197 +348,72 @@ public class ToolClass {
         userData = null;
         wasGetInfo = true;
     }
-    /*
-    public UserInformation getUserSelfInformation(String SESSDATA){
-        StringBuilder document = new StringBuilder();
-        try {
-            URL url = new URL("https://api.bilibili.com/x/web-interface/nav");
-            HttpURLConnection connection = (HttpURLConnection) url
-                    .openConnection();
-            connection.setDoInput(true);
-            connection.setRequestMethod("GET");
-            connection.setUseCaches(false);
-            connection.setRequestProperty("Cookie", "SESSDATA=" + SESSDATA);
-            connection.connect();
-            BufferedReader in = new BufferedReader(new InputStreamReader(connection.getInputStream(), StandardCharsets.UTF_8));
-            String line;
-            while ((line = in.readLine()) != null) {
-                document.append(line);
-            }
-            in.close();
-            System.out.println(document);
-            JSONObject jsonObject = new JSONObject(document.toString());
-            JSONObject data = jsonObject.getJSONObject("data");
-            UserInformation userInformation = new UserInformation();
-            userInformation.face = data.getString("face");
-            userInformation.mid = data.getString("mid");
-            userInformation.money = data.getInt("money");
-            userInformation.moral = data.getInt("moral");
-            userInformation.uname = data.getString("uname");
-            userInformation.vipStatus = data.getInt("vipStatus");
-            JSONObject wallet = data.getJSONObject("wallet");
-            userInformation.wallet = wallet.getInt("bcoin_balance");
-            JSONObject level_info = data.getJSONObject("level_info");
-            LevelInfo levelInfo = new LevelInfo(level_info.getInt("current_level"),level_info.getInt("current_min"),level_info.getInt("current_exp"),level_info.getInt("next_exp"));
-            userInformation.levelInfo = levelInfo;
-            return userInformation;
-        } catch (IOException | JSONException e) {
-            e.printStackTrace();
-            return null;
+    public Bitmap getUrlImageBitmap(String urlString) throws IOException {
+        int position = 0,lastpositon = -1;
+        boolean a =true;
+        while (position != -1){
+            lastpositon = position;
+            position = urlString.indexOf("/",position+1);
+        }
+        File file = new File(localCachePath + urlString.substring(lastpositon+1));
+        if(!file.exists()){
+            Request request = new Request.Builder()
+                    .get()
+                    .url(urlString)
+                    .build();
+            Call call = okHttpClient.newCall(request);
+            Bitmap bmp = BitmapFactory.decodeStream(call.execute().body().byteStream());
+            BufferedOutputStream bos = new BufferedOutputStream(new FileOutputStream(file));
+            bmp.compress(Bitmap.CompressFormat.JPEG, 25, bos);
+            bos.flush();
+            bos.close();
+            return  bmp;
+        }else {
+            FileInputStream is = new FileInputStream(file);
+            Bitmap bmp = BitmapFactory.decodeStream(is);
+            is.close();
+            return bmp;
         }
     }
-    */
-    public Bitmap getUrlImageBitmap(String urlString){
-        try {
-            int position = 0,lastpositon = -1;
-            boolean a =true;
-            while (position != -1){
-                lastpositon = position;
-                position = urlString.indexOf("/",position+1);
-            }
-            File file = new File(localCachePath + urlString.substring(lastpositon+1));
-            if(!file.exists()){
-                URL url = new URL(urlString);
-                URLConnection urlConnection = url.openConnection();
-                urlConnection.setDoInput(true);
-                urlConnection.setUseCaches(false);
-                urlConnection.setConnectTimeout(3000);
-                urlConnection.setReadTimeout(3000);
-                urlConnection.connect();
-                InputStream is = urlConnection.getInputStream();
-                Bitmap bmp = BitmapFactory.decodeStream(is);
-                is.close();
-                BufferedOutputStream bos = new BufferedOutputStream(new FileOutputStream(file));
-                bmp.compress(Bitmap.CompressFormat.JPEG, 25, bos);
-                bos.flush();
-                bos.close();
-                return  bmp;
-            }else {
-                FileInputStream is = new FileInputStream(file);
-                Bitmap bmp = BitmapFactory.decodeStream(is);
-                is.close();
-                return bmp;
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-            return null;
-        }
+    private Response urlPostJsonRequest(String urlStr,String postData) throws IOException {
+        MediaType JSON = MediaType.parse("application/json;charset=utf-8");
+        OkHttpClient okHttpClient = new OkHttpClient();
+        RequestBody requestBody = RequestBody.create(JSON,postData);
+        Request request = new Request.Builder()
+                .url(urlStr)
+                .post(requestBody)
+                .build();
+        Call call = okHttpClient.newCall(request);
+        return call.execute();
     }
-    private UrlReply urlPostRequest(String urlStr,String postData) {
-        StringBuilder document = new StringBuilder();
-        try {
-            //链接URL
-            URL url = new URL(urlStr);
-            HttpURLConnection connection = (HttpURLConnection) url
-                    .openConnection();
-            connection.setDoOutput(true);
-            connection.setDoInput(true);
-            connection.setRequestMethod("POST");
-            connection.setUseCaches(false); //不使用缓存
-            connection.setRequestProperty("Content-Type", "application/x-www-form-urlencoded");
-            connection.setConnectTimeout(3000);
-            connection.setReadTimeout(3000);
-            connection.connect();
-            BufferedWriter out = new BufferedWriter(new OutputStreamWriter(connection.getOutputStream(),StandardCharsets.UTF_8));
-            out.write(postData);
-            out.flush();
-            BufferedReader in = new BufferedReader(new InputStreamReader(connection.getInputStream(), StandardCharsets.UTF_8));
-            String line;
-            while ((line = in.readLine()) != null) {
-                document.append(line);
-            }
-            out.close();
-            in.close();
-            connection.disconnect();
-            return new UrlReply(document.toString(),connection.getHeaderField("Set-Cookie"));
-        } catch (IOException e) {
-            e.printStackTrace();
-            return null;
-        }
+    private Response urlPostJsonRequestWithCookie(String urlStr,String Cookie,String postData) throws IOException {
+        MediaType JSON = MediaType.parse("application/json;charset=utf-8");
+        OkHttpClient okHttpClient = new OkHttpClient();
+        RequestBody requestBody = RequestBody.create(JSON,postData);
+        Request request = new Request.Builder()
+                .url(urlStr)
+                .post(requestBody)
+                .addHeader("Cookie",Cookie)
+                .build();
+        Call call = okHttpClient.newCall(request);
+        return call.execute();
     }
-    private UrlReply urlPostRequestWithCookie(String urlStr,String Cookie,String postData) {
-        StringBuilder document = new StringBuilder();
-        try {
-            //链接URL
-            URL url = new URL(urlStr);
-            HttpURLConnection connection = (HttpURLConnection) url
-                    .openConnection();
-            connection.setDoOutput(true);
-            connection.setDoInput(true);
-            connection.setRequestMethod("POST");
-            connection.setRequestProperty("Cookie",Cookie);
-            connection.setUseCaches(false); //不使用缓存
-            connection.setRequestProperty("Content-Type", "application/x-www-form-urlencoded");
-            connection.setConnectTimeout(3000);
-            connection.setReadTimeout(3000);
-            connection.connect();
-            BufferedWriter out = new BufferedWriter(new OutputStreamWriter(connection.getOutputStream(), StandardCharsets.UTF_8));
-            out.write(postData);
-            out.flush();
-            BufferedReader in = new BufferedReader(new InputStreamReader(connection.getInputStream(), StandardCharsets.UTF_8));
-            String line;
-            while ((line = in.readLine()) != null) {
-                document.append(line);
-            }
-            out.close();
-            in.close();
-            connection.disconnect();
-            return new UrlReply(document.toString(),connection.getHeaderField("Set-Cookie"));
-        } catch (IOException e) {
-            e.printStackTrace();
-            return null;
-        }
+    private Response urlGetRequestWithCookie(String urlStr,String Cookie) throws IOException {
+        Request request = new Request.Builder()
+                .get()
+                .url(urlStr)
+                .addHeader("Cookie",Cookie)
+                .build();
+        Call call = okHttpClient.newCall(request);
+        return call.execute();
     }
-    private UrlReply urlGetRequestWithCookie(String urlStr,String Cookie) {
-        StringBuilder document = new StringBuilder();
-        try {
-            URL url = new URL(urlStr);
-            HttpURLConnection connection = (HttpURLConnection) url
-                    .openConnection();
-            connection.setDoInput(true);
-            connection.setRequestMethod("GET");
-            connection.setUseCaches(false);
-            connection.setRequestProperty("Cookie",Cookie);
-            connection.setConnectTimeout(3000);
-            connection.setReadTimeout(3000);
-            connection.connect();
-            BufferedReader in = new BufferedReader(new InputStreamReader(connection.getInputStream(), StandardCharsets.UTF_8));
-            String line;
-            while ((line = in.readLine()) != null) {
-                document.append(line);
-            }
-            in.close();
-            connection.disconnect();
-            return new UrlReply(document.toString(),connection.getHeaderField("Set-Cookie"));
-        } catch (IOException e) {
-            e.printStackTrace();
-            return null;
-        }
-    }
-    private UrlReply urlGetRequest(String urlStr){
-        StringBuilder document = new StringBuilder();
-        try {
-            URL url = new URL(urlStr);
-            HttpURLConnection connection = (HttpURLConnection) url
-                    .openConnection();
-            connection.setDoInput(true);
-            connection.setRequestMethod("GET");
-            connection.setUseCaches(false);
-            connection.setConnectTimeout(3000);
-            connection.setReadTimeout(3000);
-            connection.connect();
-            BufferedReader in = new BufferedReader(new InputStreamReader(connection.getInputStream(), StandardCharsets.UTF_8));
-            String line;
-            while ((line = in.readLine()) != null) {
-                document.append(line);
-            }
-            in.close();
-            connection.disconnect();
-            return new UrlReply(document.toString(),connection.getHeaderField("Set-Cookie"));
-        } catch (IOException e) {
-            e.printStackTrace();
-            return null;
-        }
+    private Response urlGetRequest(String urlStr) throws IOException {
+        Request request = new Request.Builder()
+                .get()
+                .url(urlStr)
+                .build();
+        Call call = okHttpClient.newCall(request);
+        return call.execute();
     }
     private String subStringRSAPublicKey(String RSAPublicKey){
         return RSAPublicKey.substring(RSAPublicKey.indexOf("-----BEGIN PUBLIC KEY-----")+"-----BEGIN PUBLIC KEY-----".length(),RSAPublicKey.indexOf("-----END PUBLIC KEY-----"));

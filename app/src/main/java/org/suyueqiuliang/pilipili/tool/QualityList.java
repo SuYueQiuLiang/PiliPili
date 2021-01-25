@@ -7,6 +7,6 @@ public class QualityList {
         this.qn = qn;
         this.qualityList = qualityList;
     }
-    public ArrayList<Integer> qn = new ArrayList<>();
-    public ArrayList<String> qualityList = new ArrayList<>();
+    public ArrayList<Integer> qn;
+    public ArrayList<String> qualityList;
 }

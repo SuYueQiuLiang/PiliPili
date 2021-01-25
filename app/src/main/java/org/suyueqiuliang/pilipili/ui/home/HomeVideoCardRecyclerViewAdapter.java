@@ -72,8 +72,14 @@ public class HomeVideoCardRecyclerViewAdapter extends RecyclerView.Adapter {
         final video video = arrayList.get(position);
         new Thread(() -> {
             ToolClass toolClass = new ToolClass();
-            Bitmap bitmap = toolClass.getUrlImageBitmap(video.title_image);
-            activity.runOnUiThread(() -> image_title.setImageBitmap(bitmap));
+            Bitmap bitmap = null;
+            try {
+                bitmap = toolClass.getUrlImageBitmap(video.title_image);
+                Bitmap finalBitmap = bitmap;
+                activity.runOnUiThread(() -> image_title.setImageBitmap(finalBitmap));
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
         }).start();
 
         text_video_time.setText(video.duration);

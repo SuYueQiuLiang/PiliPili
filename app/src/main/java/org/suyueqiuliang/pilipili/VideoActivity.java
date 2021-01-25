@@ -19,61 +19,57 @@ import com.google.android.exoplayer2.source.ProgressiveMediaSource;
 import com.google.android.exoplayer2.ui.PlayerView;
 import com.google.android.exoplayer2.upstream.DefaultHttpDataSourceFactory;
 
+import org.json.JSONException;
 import org.suyueqiuliang.pilipili.tool.QualityList;
 import org.suyueqiuliang.pilipili.tool.ToolClass;
 import org.suyueqiuliang.pilipili.tool.VideoInformation;
+
+import java.io.IOException;
 
 public class VideoActivity extends AppCompatActivity {
     static int av;
     private PlayerView playerView;
     static ToolClass toolClass;
     static SimpleExoPlayer player;
-    static ImageView back;
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.video_layout);
         hideSystemNavigationBar();
         toolClass = new ToolClass();
-        back = findViewById(R.id.video_back);
         Intent intent = getIntent();
         av = intent.getIntExtra("av",0);
-        back.setOnClickListener(v -> {
-            player.stop();
-            player.release();
-            finish();
-        });
         new Thread(() -> {
-            VideoInformation videoInformation = toolClass.getVideoInformation(av);
-            QualityList qualityList = toolClass.getVideoStreamQuality(av,videoInformation.pages.get(0).cid);
-            String[] urls = toolClass.getVideoStream(av,videoInformation.pages.get(0).cid,qualityList.qn.get(0));
-            //toolClass.playVideo(urls[0]);
-            //urls[0] = urls[0].replace("http","https");
-            runOnUiThread(()->{
-                playerView = findViewById(R.id.video_view);
-                Log.e("url",urls[0]);
-                DefaultHttpDataSourceFactory dataSourceFactory = new DefaultHttpDataSourceFactory("545");
-                dataSourceFactory.clearAllDefaultRequestProperties();
-                dataSourceFactory.getDefaultRequestProperties().set("referer","http://m.bilibili.com/video/"+videoInformation.bvid);
-                dataSourceFactory.getDefaultRequestProperties().set("Accept","*/*");
-                dataSourceFactory.getDefaultRequestProperties().set("X-Requested-With","com.android.browser");
-                dataSourceFactory.getDefaultRequestProperties().set("Origin","http://m.bilibili.com");
-                dataSourceFactory.getDefaultRequestProperties().set("Connection","keep-alive");
-                dataSourceFactory.getDefaultRequestProperties().set("Accept-Encoding","identity;q=1, *;q=0");
-                dataSourceFactory.getDefaultRequestProperties().set("Accept-Language","zh-CN,zh;q=0.9,en-US;q=0.8,en;q=0.7");
-                MediaSource videoSource = new ProgressiveMediaSource.Factory(dataSourceFactory).createMediaSource(Uri.parse(urls[0]));
-                //MediaSource audioSource = new ProgressiveMediaSource.Factory(dataSourceFactory).createMediaSource(audioUri);
-                //MergingMediaSource mergedSource = new MergingMediaSource(videoSource, audioSource);
-                MediaSourceFactory mediaSourceFactory =
-                        new DefaultMediaSourceFactory(dataSourceFactory)
-                                .setAdViewProvider(playerView);
-                player = new SimpleExoPlayer.Builder(this)
-                        .setMediaSourceFactory(mediaSourceFactory)
-                        .build();
-                playerView.setPlayer(player);
-                player.setMediaItem(MediaItem.fromUri(String.valueOf(urls[0])));
-                player.prepare();
-                player.play();
-            });
+            try {
+                VideoInformation videoInformation = toolClass.getVideoInformation(av);
+                QualityList qualityList = toolClass.getVideoStreamQuality(av,videoInformation.pages.get(0).cid);
+                Log.e("QualityList",String.valueOf(qualityList.qn.get(0)));
+                //pages是多p视频分p，qn是分辨率代码，cid是p对应代码
+                String[] urls = toolClass.getVideoStream(av,videoInformation.pages.get(0).cid,qualityList.qn.get(0));
+                runOnUiThread(()->{
+                    playerView = findViewById(R.id.video_view);
+                    DefaultHttpDataSourceFactory dataSourceFactory = new DefaultHttpDataSourceFactory("pilipili");
+                    dataSourceFactory.clearAllDefaultRequestProperties();
+                    dataSourceFactory.getDefaultRequestProperties().set("referer","http://m.bilibili.com/video/"+videoInformation.bvid);
+                    dataSourceFactory.getDefaultRequestProperties().set("Accept","*/*");
+                    dataSourceFactory.getDefaultRequestProperties().set("X-Requested-With","com.android.browser");
+                    dataSourceFactory.getDefaultRequestProperties().set("Origin","http://m.bilibili.com");
+                    dataSourceFactory.getDefaultRequestProperties().set("Connection","keep-alive");
+                    dataSourceFactory.getDefaultRequestProperties().set("Accept-Encoding","identity;q=1, *;q=0");
+                    dataSourceFactory.getDefaultRequestProperties().set("Accept-Language","zh-CN,zh;q=0.9,en-US;q=0.8,en;q=0.7");
+                    MediaSourceFactory mediaSourceFactory = new DefaultMediaSourceFactory(dataSourceFactory)
+                                    .setAdViewProvider(playerView);
+                    player = new SimpleExoPlayer.Builder(this)
+                            .setMediaSourceFactory(mediaSourceFactory)
+                            .build();
+                    playerView.setPlayer(player);
+                    for (String url : urls)
+                        player.addMediaItem(MediaItem.fromUri(url));
+                    player.prepare();
+                    player.play();
+                });
+            } catch (JSONException | IOException e) {
+                e.printStackTrace();
+            }
         }).start();
     }
     private void hideSystemNavigationBar() {
@@ -88,14 +84,10 @@ public class VideoActivity extends AppCompatActivity {
             player.stop();
             player.release();
             finish();
-            //不执行父类点击事件
             return true;
         }
-        //继续执行父类其他点击事件
         return super.onKeyUp(keyCode, event);
     }
-
-
     @Override
     public void onPause() {
         super.onPause();
